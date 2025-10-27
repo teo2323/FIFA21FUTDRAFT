@@ -215,6 +215,7 @@ public:
     }
     Database& operator=(const Database& other) {
         playersByPosition=other.playersByPosition;
+        return *this;
     }
     ~Database() {}
     void loadPlayers(const string& filename,const string& positionGroup){
@@ -223,7 +224,7 @@ public:
         string name,nat,league,club,pos,role; int rating;
         while(fin>>name>>nat>>league>>club>>pos>>role>>rating){
             Player p(name,nat,league,club,pos,role,rating);
-            playersByPosition[positionGroup].emplace_back(move(p));
+            playersByPosition[positionGroup].emplace_back(std::move(p));
         }
         fin.close();
 
@@ -308,7 +309,7 @@ public:
             vector<Player> options=db.getPlayersByPosition(fileGroup);
 
             cout<<"\nAlegeti jucatorul pentru pozitia "<<pos<<":\n";
-            for(int i=0;i<options.size();i++)
+            for(long long unsigned int i=0;i<options.size();i++)
                 cout<<i+1<<" - "<<options[i]<<"\n";
 
             int opt; cin>>opt;
@@ -322,7 +323,7 @@ public:
         vector<Manager> managers={manager1,manager2};
 
         cout<<"Alegeti managerul:\n";
-        for(int i=0;i<managers.size();i++) cout<<i+1<<" - "<<managers[i]<<"\n";
+        for(long long unsigned int i=0;i<managers.size();i++) cout<<i+1<<" - "<<managers[i]<<"\n";
         int mOpt; cin>>mOpt;
         team.setManager(managers[mOpt-1]);
 
