@@ -1,0 +1,5 @@
+De_Bruyne Belgium PremierLeague Manchester_City CM Midfielder 91
+De_Jong Netherlands LaLiga Barcelona CM Midfielder 85
+Radja_Nainggolan Belgium SerieA Inter_Milano CM Midfielder 83
+Marco_Verratti Italy Ligue1 PSG CM Midfielder 86
+Marco_Reus Germany Bundesliga BVB09_Dortmund CM Midfielder 85

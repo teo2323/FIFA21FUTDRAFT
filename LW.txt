@@ -1,0 +1,5 @@
+Sadio_Mane Senegal PremierLeague Liverpool LW Attacker 90
+Eden_Hazard Belgium LaLiga Real_Madrid LW Attacker 88
+El_Shaarawy Italy SerieA AS_Roma LW Attacker 87
+Neymar_Jr Brazil Ligue1 PSG LW Attacker 91
+Marcus_Thuram France Bundesliga Borussia_Monchengladbach LW Attacker 80

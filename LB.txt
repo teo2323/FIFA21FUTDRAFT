@@ -1,0 +1,5 @@
+Andrew_Robertson Scotland PremierLeague Liverpool LB Defender 87
+Marcelo Brazil LaLiga Real_Madrid LB Defender 90
+Alex_Sandro Brazil SerieA Juventus LB Defender 85
+Juan_Bernat Spain Ligue1 PSG LB Defender 83
+Alphonso_Davies Canada Bundesliga Bayern_Munich LB Defender 81

@@ -1,0 +1,5 @@
+Van_Dijk Netherlands PremierLeague Liverpool CB Defender 90
+Sergio_Ramos Spain LaLiga Real_Madrid CB Defender 89
+Leonardo_Bonucci Italy SerieA Juventus CB Defender 85
+Marquinhos Brazil Ligue1 PSG CB Defender 85
+Mats_Hummels Germany Bundesliga Bayern_Munich CB Defender 86
