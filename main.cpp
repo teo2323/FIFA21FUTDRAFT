@@ -97,7 +97,21 @@ public:
             positions={"GK","LB","LCB","RCB","RB","LM","LCM","RCM","RM","LST","RST"};
             links={{"GK","RCB"},{"RCB","RB"},{"RB","RM"},{"RM","RST"},{"RST","LST"},{"LST","LM"},{"LM","LB"},{"LB","LCB"},
                    {"LCB","RCB"},{"LCB","GK"},{"LM","LCM"},{"LCM","RCM"},{"RCM","RM"},{"LST","LCM"},{"RST","RCM"},{"LCM","LCB"},{"RCM","RCB"}};
+        }else if (n=="343") {
+            positions={"GK","LCB","CB","RCB","LM","LCM","RCM","RM","LW","ST","RW"};
+            links={{"GK","LCB"},{"GK","CB"},{"GK","RCB"},{"RCB","RM"},{"RM","RW"},{"RW","ST"},{"ST","LW"},{"LW","LM"},
+                   {"LM","LCB"},{"LCB","CB"},{"CB","RCB"},{"CB","LCM"},{"CB","RCM"},{"LCM","LM"},{"RCM","RM"},{"LCM","RCM"},{"RCM","ST"},{"LCM","ST"}};
+        }else if (n=="4321") {
+            positions={"GK","LB","LCB","RCB","RB","LCM","CDM","RCM","LST","ST","RST"};
+            links={{"GK","RCB"},{"RCB","RB"},{"RB","RCM"},{"RCM","RST"},{"RST","ST"},{"ST","LST"},{"LST","LCM"},{"LCM","LB"},
+                   {"LB","LCB"},{"LCB","RCB"},{"LCB","GK"},{"LCM","CDM"},{"CDM","RCM"},{"CDM","LST"},{"CDM","RST"}};
         }
+        else if (n=="532") {
+            positions={"GK","LB","LCB","CB","RCB","RB","CDM","LCM","RCM","LST", "RST"};
+            links={{"GK","LCB"},{"GK","CB"},{"GK","RCB"},{"RCB","RB"},{"RB","RCM"},{"RCM","RST"},{"RST","LST"},{"LST","LCM"},
+                   {"LCM","LB"},{"LB","LCB"},{"LCB","CB"},{"CB","RCB"},{"LCB","LCM"},{"RCB","RCM"},{"CB","CDM"},{"CDM","LCM"},{"CDM","RCM"},{"CDM","LST"},{"CDM","RST"}};
+        }
+
     }
     Formation(const Formation& other) =default;
 
@@ -109,9 +123,9 @@ public:
     [[nodiscard]] const vector<pair<string,string>>& getLinks() const { return links; }
 
     friend ostream& operator<<(ostream& os, const Formation& f) {
-        os << "Formation: " << f.name << "\nPositions: ";
+        os << "Formation: " << f.name << "\nPositions: \n";
         for(const auto& p:f.positions) os<<p<<" ";
-        os << "Links";
+        os << "\n Links";
         for (const auto& link : f.links)
             os << "  " << link.first << " <-> " << link.second << "\n";
         return os;
@@ -131,7 +145,7 @@ public:
     void setManager(const Manager& m){manager=m;}
     [[nodiscard]] bool positionTaken(const string& pos) const{return players.contains(pos);}
     [[nodiscard]] double computeRating() const {
-        double sum = 0.0;
+        int sum = 0;
         for (const auto& player : std::views::values(players))
             sum += player.getRating();
         return players.empty() ? 0.0 : sum / static_cast<double>(players.size());
@@ -250,7 +264,8 @@ class DraftSession {
     map<string,string> positionMap = {
         {"GK","GK"},{"LB","LB"},{"LCB","CB"},{"RCB","CB"},{"RB","RB"},
         {"LCM","CM"},{"CDM","CM"},{"RCM","CM"},{"LM","LM"},{"RM","RM"},
-        {"LW","LW"},{"RW","RW"},{"ST","ST"},{"LST","ST"},{"RST","ST"}
+        {"LW","LW"},{"RW","RW"},{"ST","ST"},{"LST","ST"},{"RST","ST"},
+        {"CB","CB"}
     };
 public:
     explicit DraftSession(const Formation& f):formation(f),team(f){}
@@ -293,9 +308,13 @@ public:
             cout<<"\nEchipa momentan:\n"<<team<<"\n";
         }
 
-        Manager manager1("Jurgen_Klopp","Germania","PremierLeague");
-        Manager manager2("Pep_Guardiola","Spania","PremierLeague");
-        vector<Manager> managers={manager1,manager2};
+        Manager manager1("Jurgen_Klopp","Germany","PremierLeague");
+        Manager manager2("Pep_Guardiola","Spain","PremierLeague");
+        Manager manager3("Mauricio_Pochettino","Argentina","Ligue1");
+        Manager manager4("Hansi_Flick","Germany","Bundesliga");
+        Manager manager5("Gigi_Becali","Romania","Superliga1");
+
+        vector<Manager> managers={manager1,manager2,manager3, manager4, manager5};
 
         cout<<"Alegeti managerul:\n";
         for(long long unsigned int i=0;i<managers.size();i++) cout<<i+1<<" - "<<managers[i]<<"\n";
@@ -336,18 +355,29 @@ int main() {
 
 
     cout << "Bun venit in FIFA Draft Demo!\n";
-    cout << "Alege formatia:\n1 - 4-3-3\n2 - 4-4-2\nOptiunea: ";
+    cout << "Alege formatia:\n 1 -> 4-3-3 \n 2 -> 4-4-2 \n 3 -> 3-4-3 \n 4 -> 4-3-2-1 \n 5 -> 5-3-2 \nOptiunea: ";
     int opt;
 
     while (true) {
         cin >> opt;
-        if (cin.fail() || opt < 1 || opt > 2) {
-            cout << "Inputul trebuie sa fie un numar intreg intre 1 si 2. Incercati din nou: ";
+        if (cin.fail() || opt < 1 || opt > 5) {
+            cout << "Formatia trebuie sa fie un numar intreg intre 1 si 5. Incercati din nou: ";
             cin.clear();
             cin.ignore(numeric_limits<streamsize>::max(), '\n');
         } else break;
     }
-    string formatieAleasa = (opt == 1) ? "433" : "442";
+    string formatieAleasa;
+    if (opt==1) {
+        formatieAleasa = "433";
+    }else if (opt==2) {
+        formatieAleasa = "442";
+    }else if (opt==3) {
+        formatieAleasa = "343";
+    }else if (opt==4) {
+        formatieAleasa = "4321";
+    }else if (opt==5) {
+        formatieAleasa = "532";
+    }
     Formation f(formatieAleasa);
     DraftSession draft(f);
     draft.start();
