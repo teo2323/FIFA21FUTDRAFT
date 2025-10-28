@@ -21,25 +21,18 @@ public:
       rating(rate) {}
 
 
-    Player(const Player& other) {
-        name = other.name;
-        nationality = other.nationality;
-        league = other.league;
-        club = other.club;
-        position = other.position;
-        role = other.role;
-        rating = other.rating;
-    }
+    Player(const Player& other) = default;
+
     Player& operator=(const Player& other) = default;
 
     ~Player() = default;
 
-    [[nodiscard]] string getName() const { return name; }
-    [[nodiscard]] string getNationality() const { return nationality; }
-    [[nodiscard]] string getLeague() const { return league; }
-   [[nodiscard]] string getClub() const { return club; }
-   [[nodiscard]] string getPosition() const { return position; }
-    [[nodiscard]] string getRole() const { return role; }
+    [[nodiscard]] const string& getName() const { return name; }
+    [[nodiscard]] const string& getNationality() const { return nationality; }
+    [[nodiscard]] const string& getLeague() const { return league; }
+   [[nodiscard]] const string& getClub() const { return club; }
+   [[nodiscard]] const string& getPosition() const { return position; }
+    [[nodiscard]] const string& getRole() const { return role; }
     [[nodiscard]] int getRating() const { return rating; }
 
     [[nodiscard]] int calcLink(const Player& other) const {
@@ -66,19 +59,15 @@ public:
     explicit Manager(string n = "", string nat = "", string l = "")
     : name(std::move(n)), nationality(std::move(nat)), league(std::move(l)) {}
 
-    Manager(const Manager& other) {
-        name = other.name;
-        nationality = other.nationality;
-        league = other.league;
-    }
+    Manager(const Manager& other) = default;
 
     Manager& operator=(const Manager& other) = default;
 
     ~Manager() = default;
 
-    [[nodiscard]] string getName() const { return name; }
-    [[nodiscard]] string getNationality() const { return nationality; }
-    [[nodiscard]] string getLeague() const { return league; }
+    [[nodiscard]] const string& getName() const { return name; }
+    [[nodiscard]] const string& getNationality() const { return nationality; }
+    [[nodiscard]] const string& getLeague() const { return league; }
 
     [[nodiscard]] int getChemistryBonus(const Player& p) const {
         if (p.getLeague()==league || p.getNationality()==nationality) {
@@ -108,11 +97,7 @@ public:
                    {"LCB","RCB"},{"LCB","GK"},{"LM","LCM"},{"LCM","RCM"},{"RCM","RM"},{"LST","LCM"},{"RST","RCM"},{"LCM","LCB"},{"RCM","RCB"}};
         }
     }
-    Formation(const Formation& other) {
-        name = other.name;
-        positions = other.positions;
-        links = other.links;
-    }
+    Formation(const Formation& other) =default;
 
     Formation& operator=(const Formation& other) =default;
 
@@ -123,9 +108,9 @@ public:
 
     friend ostream& operator<<(ostream& os, const Formation& f) {
         os << "Formation: " << f.name << "\nPositions: ";
-        for(auto& p:f.positions) os<<p<<" ";
+        for(const auto& p:f.positions) os<<p<<" ";
         os << "Links";
-        for (auto& link : f.links)
+        for (const auto& link : f.links)
             os << "  " << link.first << " <-> " << link.second << "\n";
         return os;
     }
@@ -137,11 +122,7 @@ class Team {
     Manager manager;
 public:
     explicit Team(const Formation& f) : formation(f) {}
-    Team(const Team& other) {
-        formation = other.formation;
-        players = other.players;
-        manager = other.manager;
-    }
+    Team(const Team& other) = default;
     Team& operator=(const Team& other) =default;
     ~Team() =default;
     void addPlayer(const string& pos, const Player& p){players[pos]=p;}
@@ -164,7 +145,7 @@ public:
                 const string pos2=kv2.first;
                 const Player& p2=kv2.second;
                 if(pos1==pos2) continue;
-                for(auto& link:formation.getLinks()){
+                for(const auto& link:formation.getLinks()){
                     if((link.first==pos1 && link.second==pos2)||(link.second==pos1 && link.first==pos2)){
                         int linkType=p1.calcLink(p2);
                         if(linkType==0) localChem-=3;
@@ -197,9 +178,7 @@ class Database {
     map<string, vector<Player>> playersByPosition;
 public:
     explicit Database() = default;
-    Database(const Database& other) {
-        playersByPosition=other.playersByPosition;
-    }
+    Database(const Database& other) = default;
     Database& operator=(const Database& other) = default;
     ~Database() = default;
     void loadPlayers(const string& filename,const string& positionGroup){
@@ -277,7 +256,7 @@ public:
 
         db.loadAll();
 
-        for(auto& pos:formation.getPositions()){
+        for(const auto& pos:formation.getPositions()){
             while(team.positionTaken(pos)){
                 cout<<pos<<" deja ales, selecteaza alta pozitie.\n";
                 break;
@@ -321,6 +300,15 @@ public:
 };
 
 int main() {
+    const Player p("Messi","Argentina","LaLiga","PSG","RW","Starter",93);
+
+
+    [[maybe_unused]] const std::string& name = p.getName();
+    [[maybe_unused]] const std::string& club = p.getClub();
+    [[maybe_unused]] const std::string& position = p.getPosition();
+    [[maybe_unused]] const std::string& role = p.getRole();
+
+
     cout << "Bun venit in FIFA Draft Demo!\n";
     cout << "Alege formatia:\n1 - 4-3-3\n2 - 4-4-2\nOptiunea: ";
     int opt;
