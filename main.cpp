@@ -205,7 +205,7 @@ public:
         loadPlayers("ST.txt","ST");
     }
     [[nodiscard]] const vector<Player>& getPlayersByPosition(const string& positionGroup) const{
-        static constexpr vector<Player> empty{};
+        static const vector<Player> empty{};
         auto it=playersByPosition.find(positionGroup);
         if(it==playersByPosition.end()) return empty;
         return it->second;
