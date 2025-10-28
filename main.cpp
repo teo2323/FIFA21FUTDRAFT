@@ -269,7 +269,15 @@ public:
             for(long long unsigned int i=0;i<options.size();i++)
                 cout<<i+1<<" - "<<options[i]<<"\n";
 
-            int opt; cin>>opt;
+            int opt;
+            while (true) {
+                cin >> opt;
+                if (cin.fail() || opt < 1 || opt > static_cast<int>(options.size())) {
+                    cout << "Inputul trebuie sa fie un numar intreg intre 1 si " << options.size() << ". Incercati din nou: ";
+                    cin.clear();
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                } else break;
+            }
             team.addPlayer(pos,options[opt-1]);
 
             cout<<"\nEchipa momentan:\n"<<team<<"\n";
@@ -281,7 +289,15 @@ public:
 
         cout<<"Alegeti managerul:\n";
         for(long long unsigned int i=0;i<managers.size();i++) cout<<i+1<<" - "<<managers[i]<<"\n";
-        int mOpt; cin>>mOpt;
+        int mOpt;
+        while (true) {
+            cin >> mOpt;
+            if (cin.fail() || mOpt < 1 || mOpt > static_cast<int>(managers.size())) {
+                cout << "Inputul trebuie sa fie un numar intreg intre 1 si " << managers.size() << ". Incercati din nou: ";
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            } else break;
+        }
         team.setManager(managers[mOpt-1]);
 
         cout<<"Draft terminat!\n";
@@ -312,8 +328,15 @@ int main() {
     cout << "Bun venit in FIFA Draft Demo!\n";
     cout << "Alege formatia:\n1 - 4-3-3\n2 - 4-4-2\nOptiunea: ";
     int opt;
-    cin >> opt;
 
+    while (true) {
+        cin >> opt;
+        if (cin.fail() || opt < 1 || opt > 2) {
+            cout << "Inputul trebuie sa fie un numar intreg intre 1 si 2. Incercati din nou: ";
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        } else break;
+    }
     string formatieAleasa = (opt == 1) ? "433" : "442";
     Formation f(formatieAleasa);
     DraftSession draft(f);
