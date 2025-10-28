@@ -4,6 +4,7 @@
 #include <iomanip>
 #include <string>
 #include <map>
+#include <ranges>
 using namespace std;
 
 class Player {
@@ -11,7 +12,14 @@ class Player {
     int rating;
 public:
     explicit Player(string n="", string nat="", string l="", string c="", string pos="", string r="", int rate=0)
-        : name(n), nationality(nat), league(l), club(c), position(pos), role(r), rating(rate) {}
+    : name(std::move(n)),
+      nationality(std::move(nat)),
+      league(std::move(l)),
+      club(std::move(c)),
+      position(std::move(pos)),
+      role(std::move(r)),
+      rating(rate) {}
+
 
     Player(const Player& other) {
         name = other.name;
@@ -22,27 +30,19 @@ public:
         role = other.role;
         rating = other.rating;
     }
-    Player& operator=(const Player& other) {
-        name = other.name;
-        nationality = other.nationality;
-        league = other.league;
-        club = other.club;
-        position = other.position;
-        role = other.role;
-        rating = other.rating;
-        return *this;
-    }
-    ~Player() {}
+    Player& operator=(const Player& other) = default;
 
-    string getName() const { return name; }
-    string getNationality() const { return nationality; }
-    string getLeague() const { return league; }
-    string getClub() const { return club; }
-    string getPosition() const { return position; }
-    string getRole() const { return role; }
-    int getRating() const { return rating; }
+    ~Player() = default;
 
-    int calcLink(const Player& other) const {
+    [[nodiscard]] string getName() const { return name; }
+    [[nodiscard]] string getNationality() const { return nationality; }
+    [[nodiscard]] string getLeague() const { return league; }
+   [[nodiscard]] string getClub() const { return club; }
+   [[nodiscard]] string getPosition() const { return position; }
+    [[nodiscard]] string getRole() const { return role; }
+    [[nodiscard]] int getRating() const { return rating; }
+
+    [[nodiscard]] int calcLink(const Player& other) const {
         if (league==other.league && club==other.club && nationality==other.nationality) return 3; // verde
         if ((league==other.league && nationality==other.nationality) || (club==other.club && nationality!=other.nationality)) return 2; // galben
         if (league==other.league || nationality==other.nationality) return 1; // portocaliu
@@ -63,8 +63,8 @@ public:
 class Manager {
     string name, nationality, league;
 public:
-    explicit Manager(string n="", string nat="", string l="")
-        : name(n), nationality(nat), league(l) {}
+    explicit Manager(string n = "", string nat = "", string l = "")
+    : name(std::move(n)), nationality(std::move(nat)), league(std::move(l)) {}
 
     Manager(const Manager& other) {
         name = other.name;
@@ -72,20 +72,15 @@ public:
         league = other.league;
     }
 
-    Manager& operator=(const Manager& other) {
-        name = other.name;
-        nationality = other.nationality;
-        league = other.league;
-        return *this;
-    }
+    Manager& operator=(const Manager& other) = default;
 
-    ~Manager() {}
+    ~Manager() = default;
 
-    string getName() const { return name; }
-    string getNationality() const { return nationality; }
-    string getLeague() const { return league; }
+    [[nodiscard]] string getName() const { return name; }
+    [[nodiscard]] string getNationality() const { return nationality; }
+    [[nodiscard]] string getLeague() const { return league; }
 
-    int getChemistryBonus(const Player& p) const {
+    [[nodiscard]] int getChemistryBonus(const Player& p) const {
         if (p.getLeague()==league || p.getNationality()==nationality) {
             return 1;
         }else return 0;
@@ -102,7 +97,7 @@ class Formation {
     vector<string> positions;
     vector<pair<string,string>> links;
 public:
-    explicit Formation(string n="") : name(n) {
+    explicit Formation(const std::string& n = "") : name(n) {
         if (n=="433") {
             positions={"GK","LB","LCB","RCB","RB","LCM","CDM","RCM","LW","ST","RW"};
             links={{"GK","RCB"},{"RCB","RB"},{"RB","RCM"},{"RCM","RW"},{"RW","ST"},{"ST","LW"},{"LW","LCM"},{"LCM","LB"},
@@ -119,17 +114,12 @@ public:
         links = other.links;
     }
 
-    Formation& operator=(const Formation& other) {
-        name = other.name;
-        positions = other.positions;
-        links = other.links;
-        return *this;
-    }
+    Formation& operator=(const Formation& other) =default;
 
-    ~Formation() {}
+    ~Formation() = default;
 
-    const vector<string>& getPositions() const { return positions; }
-    const vector<pair<string,string>>& getLinks() const { return links; }
+    [[nodiscard]] const vector<string>& getPositions() const { return positions; }
+    [[nodiscard]] const vector<pair<string,string>>& getLinks() const { return links; }
 
     friend ostream& operator<<(ostream& os, const Formation& f) {
         os << "Formation: " << f.name << "\nPositions: ";
@@ -152,22 +142,19 @@ public:
         players = other.players;
         manager = other.manager;
     }
-    Team& operator=(const Team& other) {
-        formation = other.formation;
-        players = other.players;
-        manager = other.manager;
-        return *this;
-    }
-    ~Team() {}
+    Team& operator=(const Team& other) =default;
+    ~Team() =default;
     void addPlayer(const string& pos, const Player& p){players[pos]=p;}
     void setManager(const Manager& m){manager=m;}
-    bool positionTaken(const string& pos) const{return players.find(pos)!=players.end();}
-    double computeRating() const{
-        double sum=0;
-        for(auto& kv:players) sum+=kv.second.getRating();
-        return players.empty()?0:sum/players.size();
+    [[nodiscard]] bool positionTaken(const string& pos) const{return players.contains(pos);}
+    [[nodiscard]] double computeRating() const {
+        double sum = 0.0;
+        for (const auto& player : std::views::values(players))
+            sum += player.getRating();
+        return players.empty() ? 0.0 : sum / static_cast<double>(players.size());
     }
-    int computeChemistry() const{
+
+    [[nodiscard]] int computeChemistry() const{
         int chemistry=0;
         for(const auto& kv1:players){
             const string pos1=kv1.first;
@@ -191,7 +178,7 @@ public:
         }
         return min(100,chemistry);
     }
-    double computeOverall() const{return computeRating()+computeChemistry();}
+    [[nodiscard]] double computeOverall() const{return computeRating()+computeChemistry();}
     friend ostream& operator<<(ostream& os, const Team& t){
         os<<"   Echipa  :\n";
         for(auto& pos:t.formation.getPositions()){
@@ -209,15 +196,12 @@ public:
 class Database {
     map<string, vector<Player>> playersByPosition;
 public:
-    explicit Database(){}
+    explicit Database() = default;
     Database(const Database& other) {
         playersByPosition=other.playersByPosition;
     }
-    Database& operator=(const Database& other) {
-        playersByPosition=other.playersByPosition;
-        return *this;
-    }
-    ~Database() {}
+    Database& operator=(const Database& other) = default;
+    ~Database() = default;
     void loadPlayers(const string& filename,const string& positionGroup){
         ifstream fin(filename);
         if(!fin.is_open()){cerr<<"Nu s-a putut deschide fisierul: "<<filename<<"\n"; return;}
@@ -241,8 +225,8 @@ public:
         loadPlayers("RW.txt","RW");
         loadPlayers("ST.txt","ST");
     }
-    const vector<Player>& getPlayersByPosition(const string& positionGroup) const{
-        static const vector<Player> empty;
+    [[nodiscard]] const vector<Player>& getPlayersByPosition(const string& positionGroup) const{
+        static constexpr vector<Player> empty{};
         auto it=playersByPosition.find(positionGroup);
         if(it==playersByPosition.end()) return empty;
         return it->second;
@@ -282,17 +266,11 @@ class DraftSession {
     };
 public:
     explicit DraftSession(const Formation& f):formation(f),team(f){}
-    DraftSession(const DraftSession& other)
-    : formation(other.formation), team(other.team), db(other.db), positionMap(other.positionMap) {}
+    DraftSession(const DraftSession& other) = default;
 
-    DraftSession& operator=(const DraftSession& other) {
-        formation=other.formation;
-        team=other.team;
-        db=other.db;
-        positionMap=other.positionMap;
-        return *this;
-    }
-    ~DraftSession() {}
+
+    DraftSession& operator=(const DraftSession& other) = default;
+    ~DraftSession() = default;
     void start(){
         cout<<"Incepe Draft-ul pentru formatia "<<endl<<formation<<"\n";
         cout<<"-------------------------------------------\n";
