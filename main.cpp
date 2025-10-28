@@ -6,6 +6,7 @@
 #include <map>
 #include <ranges>
 #include <limits>
+#include <algorithm>
 using namespace std;
 
 class Player {
@@ -161,6 +162,13 @@ public:
         return min(100,chemistry);
     }
     [[nodiscard]] double computeOverall() const{return computeRating()+computeChemistry();}
+    [[nodiscard]] bool isPlayerInTeam(const Player& p) const {
+        return std::ranges::any_of(players | std::views::values,
+                                   [&](const Player& player){ return player.getName() == p.getName(); });
+    }
+
+
+
     friend ostream& operator<<(ostream& os, const Team& t){
         os<<"   Echipa  :\n";
         for(auto& pos:t.formation.getPositions()){
@@ -273,14 +281,15 @@ public:
             int opt;
             while (true) {
                 cin >> opt;
-                if (cin.fail() || opt < 1 || opt > static_cast<int>(options.size())) {
-                    cout << "Inputul trebuie sa fie un numar intreg intre 1 si " << options.size() << ". Incercati din nou: ";
+                if (cin.fail() || opt < 1 || opt > static_cast<int>(options.size()) || team.isPlayerInTeam(options[opt-1])) {
+                    cout << "Inputul trebuie sa fie un numar intreg intre 1 si " << options.size() << ", sau jucatorii trebuie sa fie diferiti Incercati din nou: ";
                     cin.clear();
                     cin.ignore(numeric_limits<streamsize>::max(), '\n');
                 } else break;
+
+
             }
             team.addPlayer(pos,options[opt-1]);
-
             cout<<"\nEchipa momentan:\n"<<team<<"\n";
         }
 
