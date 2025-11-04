@@ -1,0 +1,27 @@
+[
+  {
+    "name": "Jurgen_Klopp",
+    "nationality": "Germany",
+    "league": "PremierLeague"
+  },
+  {
+    "name": "Pep_Guardiola",
+    "nationality": "Spain",
+    "league": "PremierLeague"
+  },
+  {
+    "name": "Mauricio_Pochettino",
+    "nationality": "Argentina",
+    "league": "Ligue1"
+  },
+  {
+    "name": "Hansi_Flick",
+    "nationality": "Germany",
+    "league": "Bundesliga"
+  },
+  {
+    "name": "Gigi_Becali",
+    "nationality": "Romania",
+    "league": "Superliga1"
+  }
+]

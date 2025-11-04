@@ -50,6 +50,13 @@ include(cmake/CopyHelper.cmake)
 # NOTE: update executable name in .github/workflows/cmake.yml:25 when changing name here
 add_executable(${MAIN_EXECUTABLE_NAME}
     main.cpp
+        libraries/json.hpp
+        sources/input.hpp
+        sources/input.cpp
+        sources/manager.hpp
+        sources/manager.cpp
+        sources/player.hpp
+        sources/player.cpp
 )
 
 # NOTE: Add all defined targets (e.g. executables, libraries, etc. )
@@ -76,6 +83,6 @@ if(APPLE)
     install(FILES launcher.command DESTINATION ${DESTINATION_DIR})
 endif()
 
-copy_files(FILES tastatura.txt LB.txt GK.txt CB.txt RB.txt LM.txt CM.txt RM.txt LW.txt ST.txt RW.txt COPY_TO_DESTINATION TARGET_NAME ${MAIN_EXECUTABLE_NAME})
+copy_files(FILES managers.json tastatura.txt LB.txt GK.txt CB.txt RB.txt LM.txt CM.txt RM.txt LW.txt ST.txt RW.txt COPY_TO_DESTINATION TARGET_NAME ${MAIN_EXECUTABLE_NAME})
 # copy_files(FILES tastatura.txt config.json DIRECTORY images sounds COPY_TO_DESTINATION TARGET_NAME ${MAIN_EXECUTABLE_NAME})
 # copy_files(DIRECTORY images sounds COPY_TO_DESTINATION TARGET_NAME ${MAIN_EXECUTABLE_NAME})

@@ -7,81 +7,12 @@
 #include <ranges>
 #include <limits>
 #include <algorithm>
+
+#include "sources/player.hpp"
+#include "sources/manager.hpp"
+#include "sources/input.hpp"
+
 using namespace std;
-
-class Player {
-    string name, nationality, league, club, position, role;
-    int rating;
-public:
-    explicit Player(string n="", string nat="", string l="", string c="", string pos="", string r="", int rate=0)
-    : name(std::move(n)),
-      nationality(std::move(nat)),
-      league(std::move(l)),
-      club(std::move(c)),
-      position(std::move(pos)),
-      role(std::move(r)),
-      rating(rate) {}
-
-
-    Player(const Player& other) = default;
-
-    Player& operator=(const Player& other) = default;
-
-    ~Player() = default;
-
-    [[nodiscard]] const string& getName() const { return name; }
-    [[nodiscard]] const string& getNationality() const { return nationality; }
-    [[nodiscard]] const string& getLeague() const { return league; }
-   [[nodiscard]] const string& getClub() const { return club; }
-   [[nodiscard]] const string& getPosition() const { return position; }
-    [[nodiscard]] const string& getRole() const { return role; }
-    [[nodiscard]] int getRating() const { return rating; }
-
-    [[nodiscard]] int calcLink(const Player& other) const {
-        if (league==other.league && club==other.club && nationality==other.nationality) return 3; // verde
-        if ((league==other.league && nationality==other.nationality) || (club==other.club && nationality!=other.nationality)) return 2; // galben
-        if (league==other.league || nationality==other.nationality) return 1; // portocaliu
-        return 0; // rosu
-    }
-
-    friend ostream& operator<<(ostream& os, const Player& p) {
-        os << setw(15) << left << p.name
-           << " | " << setw(12) << p.nationality
-           << " | " << setw(12) << p.league
-           << " | " << setw(10) << p.club
-           << " | " << setw(5) << p.position
-           << " | " << setw(3) << p.rating;
-        return os;
-    }
-};
-
-class Manager {
-    string name, nationality, league;
-public:
-    explicit Manager(string n = "", string nat = "", string l = "")
-    : name(std::move(n)), nationality(std::move(nat)), league(std::move(l)) {}
-
-    Manager(const Manager& other) = default;
-
-    Manager& operator=(const Manager& other) = default;
-
-    ~Manager() = default;
-
-    [[nodiscard]] const string& getName() const { return name; }
-    [[nodiscard]] const string& getNationality() const { return nationality; }
-    [[nodiscard]] const string& getLeague() const { return league; }
-
-    [[nodiscard]] int getChemistryBonus(const Player& p) const {
-        if (p.getLeague()==league || p.getNationality()==nationality) {
-            return 1;
-        }else return 0;
-    }
-
-    friend ostream& operator<<(ostream& os, const Manager& m) {
-        os << "Manager: " << m.name << " (" << m.nationality << ", " << m.league << ")";
-        return os;
-    }
-};
 
 class Formation {
     string name;
@@ -260,7 +191,7 @@ public:
 class DraftSession {
     Formation formation;
     Team team;
-    Database db;
+    Database database;
     map<string,string> positionMap = {
         {"GK","GK"},{"LB","LB"},{"LCB","CB"},{"RCB","CB"},{"RB","RB"},
         {"LCM","CM"},{"CDM","CM"},{"RCM","CM"},{"LM","LM"},{"RM","RM"},
@@ -278,7 +209,7 @@ public:
         cout<<"Incepe Draft-ul pentru formatia "<<endl<<formation<<"\n";
         cout<<"-------------------------------------------\n";
 
-        db.loadAll();
+        database.loadAll();
 
         for(const auto& pos:formation.getPositions()){
             while(team.positionTaken(pos)){
@@ -287,7 +218,7 @@ public:
             }
 
             string fileGroup=positionMap[pos];
-            vector<Player> options=db.getPlayersByPosition(fileGroup);
+            vector<Player> options=database.getPlayersByPosition(fileGroup);
 
             cout<<"\nAlegeti jucatorul pentru pozitia "<<pos<<":\n";
             for(long long unsigned int i=0;i<options.size();i++)
@@ -308,13 +239,14 @@ public:
             cout<<"\nEchipa momentan:\n"<<team<<"\n";
         }
 
-        Manager manager1("Jurgen_Klopp","Germany","PremierLeague");
-        Manager manager2("Pep_Guardiola","Spain","PremierLeague");
-        Manager manager3("Mauricio_Pochettino","Argentina","Ligue1");
-        Manager manager4("Hansi_Flick","Germany","Bundesliga");
-        Manager manager5("Gigi_Becali","Romania","Superliga1");
+        // Manager manager1("Jurgen_Klopp","Germany","PremierLeague");
+        // Manager manager2("Pep_Guardiola","Spain","PremierLeague");
+        // Manager manager3("Mauricio_Pochettino","Argentina","Ligue1");
+        // Manager manager4("Hansi_Flick","Germany","Bundesliga");
+        // Manager manager5("Gigi_Becali","Romania","Superliga1");
 
-        vector<Manager> managers={manager1,manager2,manager3, manager4, manager5};
+        input ReadFromFile{};
+        vector<Manager> managers=ReadFromFile.readManagers("managers.json");
 
         cout<<"Alegeti managerul:\n";
         for(long long unsigned int i=0;i<managers.size();i++) cout<<i+1<<" - "<<managers[i]<<"\n";
@@ -338,7 +270,7 @@ public:
         os << ds.formation << "\n\n";
         os << ds.team << "\n";
         os << "\n";
-        os << ds.db << "\n";
+        os << ds.database << "\n";
         return os;
     }
 
