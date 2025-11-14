@@ -1,0 +1,5 @@
+Son South_Korea PremierLeague Tottenham LM Midfielder 87
+Yannick_Carrasco Belgium LaLiga Atletico_Madrid LM Midfielder 82
+Douglas_Costa Brazil SerieA Juventus LM Midfielder 84
+Jonathan_Bamba France Ligue1 Lile LM Midfielder 78
+Kingsley_Coman France Bundesliga Bayern_Munich LM Midfielder 84

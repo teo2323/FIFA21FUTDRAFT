@@ -1,0 +1,5 @@
+Mohamed_Salah Egypt PremierLeague Liverpool RW Attacker 90
+Lionel_Messi Argentina LaLiga Barcelona RW Attacker 93
+Hirving_Lozano Mexico SerieA Napoli RW Attacker 80
+Di_Maria Argentina Ligue1 PSG RW Attacker 87
+Leon_Bailey Jamaica Bundesliga Stuttgart RW Attacker 90

@@ -1,0 +1,5 @@
+Kun_Aguero Argentina PremierLeague Manchester_City ST Attacker 89
+Luis_Suarez Uruguay LaLiga Barcelona ST Attacker 87
+Cristiano_Ronaldo Portugal SerieA Juventus ST Attacker 92
+Kylian_Mbappe France Ligue1 PSG ST Attacker 90
+Robert_Lewandowski Poland Bundesliga Bayern_Munich ST Attacker 91
