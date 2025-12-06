@@ -4,13 +4,18 @@
 
 using namespace std;
 
-DraftSession::DraftSession(const Formation& f) : formation(f), team(f) {
-    positionMap = {
-        {"GK","GK"},{"LB","LB"},{"LCB","CB"},{"RCB","CB"},{"RB","RB"},
-        {"LCM","CM"},{"CDM","CM"},{"RCM","CM"},{"LM","LM"},{"RM","RM"},
-        {"LW","LW"},{"RW","RW"},{"ST","ST"},{"LST","ST"},{"RST","ST"},
-        {"CB","CB"}
-    };
+DraftSession::DraftSession(const Formation& f)
+    : formation(f),
+      team(f),
+
+      positionMap{
+              {"GK","GK"},{"LB","LB"},{"LCB","CB"},{"RCB","CB"},{"RB","RB"},
+              {"LCM","CM"},{"CDM","CM"},{"RCM","CM"},{"LM","LM"},{"RM","RM"},
+              {"LW","LW"},{"RW","RW"},{"ST","ST"},{"LST","ST"},{"RST","ST"},
+              {"CB","CB"}
+      }
+{
+
 }
 
 void DraftSession::start() {
