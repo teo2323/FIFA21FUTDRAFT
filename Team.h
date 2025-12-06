@@ -1,0 +1,28 @@
+#pragma once
+#include <map>
+#include <string>
+#include <iostream>
+#include "Formation.h"
+#include "Player.h"
+#include "Manager.h"
+
+class Team {
+    Formation formation;
+    std::map<std::string, Player> players;
+    Manager manager;
+public:
+    explicit Team(const Formation& f);
+    Team(const Team& other) = default;
+    Team& operator=(const Team& other) = default;
+    ~Team() = default;
+
+    void addPlayer(const std::string& pos, const Player& p);
+    void setManager(const Manager& m);
+    [[nodiscard]] bool positionTaken(const std::string& pos) const;
+    [[nodiscard]] double computeRating() const;
+    [[nodiscard]] int computeChemistry() const;
+    [[nodiscard]] double computeOverall() const;
+    [[nodiscard]] bool isPlayerInTeam(const Player& p) const;
+
+    friend std::ostream& operator<<(std::ostream& os, const Team& t);
+};
