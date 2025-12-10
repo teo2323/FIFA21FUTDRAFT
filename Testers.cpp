@@ -14,14 +14,19 @@ void Testers::runPlayerTests() {
 
     [[maybe_unused]] int rating1 = p1.getRating();
     [[maybe_unused]] int rating2 = p2.getRating();
+
+
+    [[maybe_unused]] string club = p1.getClub();
+    [[maybe_unused]] string role = p1.getRole();
+
     [[maybe_unused]] int link = p1.calcLink(p2);
-    
+
     [[maybe_unused]] string Culoarelink;
     if (link == 0) Culoarelink = "rosu";
     if (link == 1) Culoarelink = "portocaliu";
     if (link == 2) Culoarelink = "galben";
     if (link == 3) Culoarelink = "verde";
-    
+
     [[maybe_unused]] const std::string& n1 = p1.getName();
     [[maybe_unused]] const std::string& n2 = p2.getName();
 
@@ -48,6 +53,10 @@ void Testers::runTeamTests() {
     [[maybe_unused]] double rating = t.computeRating();
     [[maybe_unused]] int chem = t.computeChemistry();
     [[maybe_unused]] double overall = t.computeOverall();
+
+
+    [[maybe_unused]] bool taken = t.positionTaken("RW");
+    [[maybe_unused]] bool inTeam = t.isPlayerInTeam(p);
 
     cout << "Echipa test: rating=" << rating << " | chem=" << chem << " | overall=" << overall << "\n";
 }

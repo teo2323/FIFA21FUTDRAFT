@@ -5,7 +5,7 @@
 #include <SFML/Graphics.hpp>
 #include "DraftSession.h"
 #include "Formation.h"
-
+#include "Testers.h"
 
 struct MenuButton {
     sf::RectangleShape shape;
@@ -16,6 +16,12 @@ struct MenuButton {
 };
 
 int main() {
+
+    std::cout << "--- Rulare Teste Interne ---\n";
+    Testers::runPlayerTests();
+    Testers::runManagerTests();
+    Testers::runTeamTests();
+    std::cout << "--- Final Teste Interne ---\n\n";
 
     sf::ContextSettings settings;
     settings.antiAliasingLevel = 8;
