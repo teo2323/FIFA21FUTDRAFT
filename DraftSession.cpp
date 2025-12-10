@@ -1,83 +1,464 @@
 #include "DraftSession.h"
-#include <limits>
-#include <vector>
-
+#include <filesystem>
+#include <optional>
+#include <algorithm>
+#include <random>
+#include <iostream>
 using namespace std;
 
-DraftSession::DraftSession(const Formation& f)
+DraftSession::DraftSession(sf::RenderWindow& win, const Formation& f)
     : formation(f),
       team(f),
-
+      db(),
       positionMap{
-              {"GK","GK"},{"LB","LB"},{"LCB","CB"},{"RCB","CB"},{"RB","RB"},
-              {"LCM","CM"},{"CDM","CM"},{"RCM","CM"},{"LM","LM"},{"RM","RM"},
-              {"LW","LW"},{"RW","RW"},{"ST","ST"},{"LST","ST"},{"RST","ST"},
-              {"CB","CB"}
-      }
-{
+          {"GK","GK"},{"LB","LB"},{"LCB","CB"},{"RCB","CB"},{"RB","RB"},
+          {"LCM","CM"},{"CDM","CM"},{"RCM","CM"},{"LM","LM"},{"RM","RM"},
+          {"LW","LW"},{"RW","RW"},{"ST","ST"},{"LST","ST"},{"RST","ST"},
+          {"CB","CB"}
+      },
 
+      window(win),
+      font(),
+      backgroundTexture(),
+      backgroundSprite(backgroundTexture),
+      defaultCardTexture(),
+      defaultManagerTexture(),
+      sidebar(),
+      dummyTexture(),
+      ratingDisplay(font),
+      chemistryDisplay(font),
+      statsBackground(),
+      currentPositionIndex(0),
+      isDrafting(true),
+      draftCompleted(false),
+      choosingManager(false),
+      currentOptions(),
+      sidebarVisuals(),
+      previewSprite(dummyTexture)
+{
+    sidebarVisuals.reserve(20);
+    sf::Texture dummy;
+    previewSprite.setTexture(dummy);
+
+    loadResources();
+    generateOptions();
 }
 
-void DraftSession::start() {
-    cout << "Incepe Draft-ul pentru formatia " << endl << formation << "\n";
-    cout << "-------------------------------------------\n";
+void DraftSession::loadResources() {
+    if (!font.openFromFile("arial.ttf")) {
+        cerr << "Eroare: Nu am putut incarca fontul.\n";
+    }
+
+
+    ratingDisplay.setFont(font);
+    chemistryDisplay.setFont(font);
 
     db.loadAll();
 
-    for (const auto& pos : formation.getPositions()) {
-        while (team.positionTaken(pos)) {
-            cout << pos << " deja ales, selecteaza alta pozitie.\n";
-            break;
+    if (!defaultCardTexture.loadFromFile("images/players/card_default.png")) {
+        cerr << "Eroare: Nu am gasit images/players/card_default.png! Voi folosi un patrat alb.\n";
+        if (!defaultCardTexture.resize(sf::Vector2u(100, 100))) {
+            cerr << "Critical: Nu am putut crea textura default (resize failed).\n";
         }
+    }
+    defaultCardTexture.setSmooth(true);
 
-        string fileGroup = positionMap[pos];
-        vector<Player> options = db.getPlayersByPosition(fileGroup);
+    string path = "images/formations/" + formation.getName() + ".png";
+    if (backgroundTexture.loadFromFile(path)) {
+        backgroundTexture.setSmooth(true);
+        backgroundSprite.setTexture(backgroundTexture, true);
 
-        cout << "\nAlegeti jucatorul pentru pozitia " << pos << ":\n";
-        for (long long unsigned int i = 0; i < options.size(); i++)
-            cout << i + 1 << " - " << options[i] << "\n";
+        sf::FloatRect bgBounds = backgroundSprite.getLocalBounds();
+        backgroundSprite.setOrigin({bgBounds.size.x/2.0f, bgBounds.size.y/2.0f});
+        backgroundSprite.setPosition({640.0f + 100.0f, 360.0f});
 
-        int opt;
-        while (true) {
-            cin >> opt;
-            if (cin.fail() || opt < 1 || opt > static_cast<int>(options.size()) || team.isPlayerInTeam(options[opt - 1])) {
-                cout << "Input invalid sau jucator existent. Incercati din nou: ";
-                cin.clear();
-                cin.ignore(numeric_limits<streamsize>::max(), '\n');
-            } else break;
-        }
-        team.addPlayer(pos, options[opt - 1]);
-        cout << "\nEchipa momentan:\n" << team << "\n";
+        float scaleY = 720.0f / bgBounds.size.y;
+        backgroundSprite.setScale({scaleY, scaleY});
     }
 
-    // Aici am adaugat o initializare manuala pt manageri, ca in codul tau
-    Manager manager1("Jurgen_Klopp", "Germany", "PremierLeague");
-    Manager manager2("Pep_Guardiola", "Spain", "PremierLeague");
-    Manager manager3("Mauricio_Pochettino", "Argentina", "Ligue1");
-    Manager manager4("Hansi_Flick", "Germany", "Bundesliga");
-    Manager manager5("Gigi_Becali", "Romania", "Superliga1");
+    sidebar.setSize(sf::Vector2f(250.f, 720.f));
+    sidebar.setFillColor(sf::Color(30, 30, 30, 240));
 
-    vector<Manager> managers = {manager1, manager2, manager3, manager4, manager5};
-
-    cout << "Alegeti managerul:\n";
-    for (long long unsigned int i = 0; i < managers.size(); i++) cout << i + 1 << " - " << managers[i] << "\n";
-    int mOpt;
-    while (true) {
-        cin >> mOpt;
-        if (cin.fail() || mOpt < 1 || mOpt > static_cast<int>(managers.size())) {
-            cout << "Input invalid. Incercati din nou: ";
-            cin.clear();
-            cin.ignore(numeric_limits<streamsize>::max(), '\n');
-        } else break;
+    if (!defaultManagerTexture.loadFromFile("images/managers/manager_default.png")) {
+        if (!defaultManagerTexture.resize(sf::Vector2u(100, 100))) {
+            cerr << "Critical: Nu am putut crea textura manager (resize failed).\n";
+        }
     }
-    team.setManager(managers[mOpt - 1]);
+    defaultManagerTexture.setSmooth(true);
 
-    cout << "Draft terminat!\n";
-    cout << team << "\n";
+    statsBackground.setSize(sf::Vector2f(250.f, 80.f));
+    statsBackground.setFillColor(sf::Color(0, 0, 0, 150));
+    statsBackground.setOutlineColor(sf::Color::White);
+    statsBackground.setOutlineThickness(2);
+    statsBackground.setPosition({1010.f, 20.f});
+
+    ratingDisplay.setCharacterSize(20);
+    ratingDisplay.setFillColor(sf::Color::Yellow);
+    ratingDisplay.setPosition({1030.f, 30.f});
+
+    chemistryDisplay.setCharacterSize(20);
+    chemistryDisplay.setFillColor(sf::Color::Cyan);
+    chemistryDisplay.setPosition({1030.f, 60.f});
+
+    updateStatsUI();
 }
 
-ostream& operator<<(ostream& os, const DraftSession& ds) {
-    os << "     Sesiune draft inceputa      \n";
-    os << ds.formation << "\n\n" << ds.team << "\n\n" << ds.db << "\n";
-    return os;
+void DraftSession::generateManagerOptions() {
+    currentOptions.clear();
+
+    vector<Manager> candidates = db.getManagers();
+
+    if (candidates.empty()) {
+        cerr << "ATENTIE: Nu s-au gasit manageri in baza de date (MANAGER.txt lipsa sau gol)!\n";
+    }
+
+    static std::random_device rd;
+    static std::mt19937 g(rd());
+    std::shuffle(candidates.begin(), candidates.end(), g);
+
+
+    int count = min(static_cast<int>(candidates.size()), 5);
+    currentOptions.reserve(count);
+
+    float cardW = 140.0f; float cardH = 200.0f; float gap = 20.0f;
+
+    float totalW = (static_cast<float>(count) * cardW) + (static_cast<float>(count - 1) * gap);
+    float startX = 250.0f + (1030.0f - totalW) / 2.0f;
+    float startY = 260.0f;
+
+    for (int i = 0; i < count; ++i) {
+        currentOptions.emplace_back(font, dummyTexture);
+        CardOption& card = currentOptions.back();
+
+        card.manager = candidates[i];
+        card.isManager = true;
+
+        card.shape.setSize({cardW, cardH});
+        card.shape.setFillColor(sf::Color(30, 40, 70, 220));
+        card.shape.setOutlineColor(sf::Color(255, 215, 0));
+        card.shape.setOutlineThickness(2);
+
+
+        float posX = startX + static_cast<float>(i) * (cardW + gap);
+        card.shape.setPosition({posX, startY});
+
+        bool loadSuccess = card.texture.loadFromFile(card.manager.getImagePath());
+
+        if (loadSuccess) {
+            card.texture.setSmooth(true);
+            card.sprite.setTexture(card.texture, true);
+        } else {
+            card.sprite.setTexture(defaultManagerTexture, true);
+        }
+
+
+        sf::FloatRect bounds = card.sprite.getLocalBounds();
+        if (bounds.size.x > 0) {
+            float scaleX = (cardW - 10.0f) / bounds.size.x;
+            float scaleY = (cardH - 50.0f) / bounds.size.y;
+            float scale = min(scaleX, scaleY);
+            card.sprite.setScale({scale, scale});
+            float spriteW = bounds.size.x * scale;
+            card.sprite.setPosition({card.shape.getPosition().x + (cardW - spriteW) / 2.0f, startY + 10.0f});
+        }
+
+
+        card.nameText.setString(card.manager.getName());
+        card.nameText.setCharacterSize(14);
+        sf::FloatRect tr = card.nameText.getLocalBounds();
+        card.nameText.setOrigin({tr.size.x/2.0f, 0.0f});
+        card.nameText.setPosition({card.shape.getPosition().x + cardW/2.0f, startY + cardH - 25.0f});
+
+        card.ratingText.setString("MNG");
+        card.ratingText.setFillColor(sf::Color::Cyan);
+        card.ratingText.setPosition({card.shape.getPosition().x + 5.0f, startY + 5.0f});
+    }
+}
+
+void DraftSession::generateOptions() {
+    currentOptions.clear();
+
+    const vector<string>& positions = formation.getPositions();
+
+
+    if (static_cast<size_t>(currentPositionIndex) >= positions.size()) {
+        if (!choosingManager) {
+            choosingManager = true;
+            generateManagerOptions();
+            return;
+        } else {
+            draftCompleted = true;
+            return;
+        }
+    }
+
+    string currentPos = positions[currentPositionIndex];
+    string dbGroup = positionMap[currentPos];
+
+    vector<Player> candidates = db.getPlayersByPosition(dbGroup);
+
+    static std::random_device rd;
+    static std::mt19937 g(rd());
+    std::shuffle(candidates.begin(), candidates.end(), g);
+
+
+    int count = min(static_cast<int>(candidates.size()), 5);
+
+    float cardW = 140.0f; float cardH = 200.0f; float gap = 20.0f;
+    float totalW = (static_cast<float>(count) * cardW) + (static_cast<float>(count - 1) * gap);
+    float startX = 250.0f + (1030.0f - totalW) / 2.0f;
+    float startY = 260.0f;
+
+    currentOptions.reserve(count);
+
+    for (int i = 0; i < count; ++i) {
+        currentOptions.emplace_back(font, dummyTexture);
+        CardOption& card = currentOptions.back();
+
+        card.player = candidates[i];
+        card.shape.setSize({cardW, cardH});
+        card.shape.setFillColor(sf::Color(40, 40, 40, 200));
+        card.shape.setOutlineColor(sf::Color::White);
+        card.shape.setOutlineThickness(2);
+
+
+        float posX = startX + static_cast<float>(i) * (cardW + gap);
+        card.shape.setPosition({posX, startY});
+
+        bool loadSuccess = card.texture.loadFromFile(card.player.getImagePath());
+
+        if (loadSuccess) {
+            card.texture.setSmooth(true);
+            card.sprite.setTexture(card.texture, true);
+        } else {
+            card.sprite.setTexture(defaultCardTexture, true);
+        }
+
+
+        sf::FloatRect bounds = card.sprite.getLocalBounds();
+        if (bounds.size.x > 0 && bounds.size.y > 0) {
+            float scaleX = (cardW - 10.0f) / bounds.size.x;
+            float scaleY = (cardH - 50.0f) / bounds.size.y;
+            float scale = min(scaleX, scaleY);
+            card.sprite.setScale({scale, scale});
+
+            float spriteW = bounds.size.x * scale;
+            card.sprite.setPosition({posX + (cardW - spriteW) / 2.0f, startY + 10.0f});
+        }
+
+
+        card.nameText.setString(card.player.getName());
+        card.nameText.setCharacterSize(14);
+        card.nameText.setFillColor(sf::Color::White);
+        sf::FloatRect textRect = card.nameText.getLocalBounds();
+        card.nameText.setOrigin({textRect.size.x/2.0f, 0.0f});
+        card.nameText.setPosition({posX + cardW/2.0f, startY + cardH - 25.0f});
+
+        card.ratingText.setString(to_string(card.player.getRating()));
+        card.ratingText.setCharacterSize(18);
+        card.ratingText.setFillColor(sf::Color::Yellow);
+        card.ratingText.setOutlineColor(sf::Color::Black);
+        card.ratingText.setOutlineThickness(1);
+        card.ratingText.setPosition({posX + 5.0f, startY + 5.0f});
+    }
+}
+
+void DraftSession::selectPlayer(int index) {
+
+    if (index < 0 || static_cast<size_t>(index) >= currentOptions.size()) return;
+
+    CardOption& choice = currentOptions[index];
+
+
+    if (choice.isManager) {
+        team.setManager(choice.manager);
+        cout << "Manager Ales: " << choice.manager.getName() << "\n";
+
+        const sf::Texture& texToCopy = (choice.texture.getSize().x > 0) ? choice.texture : defaultManagerTexture;
+        sidebarVisuals.emplace_back(font, texToCopy);
+        SelectedVisual& sv = sidebarVisuals.back();
+        sv.sprite.setTexture(sv.texture, true);
+
+        float sidebarY = 60.0f + 11.0f * 50.0f + 10.0f;
+
+        sv.sprite.setScale({0.15f, 0.15f});
+        sv.sprite.setPosition({20.0f, sidebarY});
+
+        sv.info.setString("Manager\n" + choice.manager.getNationality());
+        sv.info.setFillColor(sf::Color::Cyan);
+        sv.info.setPosition({80.0f, sidebarY + 5.0f});
+
+        updateStatsUI();
+        draftCompleted = true;
+        choosingManager = false;
+        currentOptions.clear();
+        return;
+    }
+
+
+    string posLabel = formation.getPositions()[currentPositionIndex];
+    team.addPlayer(posLabel, choice.player);
+    cout << "Ales: " << choice.player.getName() << "\n";
+
+    const sf::Texture& textureToCopy = (choice.texture.getSize().x > 0) ? choice.texture : defaultCardTexture;
+    sidebarVisuals.emplace_back(font, textureToCopy);
+
+    SelectedVisual& sv = sidebarVisuals.back();
+    sv.sprite.setTexture(sv.texture, true);
+
+
+    float sidebarY = 60.0f + static_cast<float>(currentPositionIndex) * 50.0f;
+
+    sv.sprite.setScale({0.15f, 0.15f});
+    sv.sprite.setPosition({20.0f, sidebarY});
+
+    sv.info.setString(posLabel + "\n" + to_string(choice.player.getRating()));
+    sv.info.setCharacterSize(14);
+    sv.info.setFillColor(sf::Color::White);
+    sv.info.setPosition({80.0f, sidebarY + 5.0f});
+
+    updateStatsUI();
+    currentPositionIndex++;
+    generateOptions();
+}
+
+void DraftSession::updateStatsUI() {
+
+    int rating = static_cast<int>(team.computeRating());
+    int chem = team.computeChemistry();
+
+    ratingDisplay.setString("RATING: " + to_string(rating));
+    chemistryDisplay.setString("CHEMISTRY: " + to_string(chem));
+}
+
+void DraftSession::handleInput() {
+    while (const std::optional event = window.pollEvent()) {
+        if (event->is<sf::Event::Closed>()) {
+            window.close();
+            isDrafting = false;
+        }
+        else if (const auto* kp = event->getIf<sf::Event::KeyPressed>()) {
+            if (kp->code == sf::Keyboard::Key::Escape) isDrafting = false;
+        }
+        else if (const auto* mp = event->getIf<sf::Event::MouseButtonPressed>()) {
+            if (mp->button == sf::Mouse::Button::Left) {
+                if (!draftCompleted) {
+                    sf::Vector2f mPos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
+                    // [FIX] size_t i in loc de int i
+                    for (size_t i = 0; i < currentOptions.size(); ++i) {
+                        if (currentOptions[i].shape.getGlobalBounds().contains(mPos)) {
+
+                            selectPlayer(static_cast<int>(i));
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void DraftSession::run() {
+    while (isDrafting && window.isOpen()) {
+        handleInput();
+        draw();
+    }
+}
+
+void DraftSession::draw() {
+    window.clear(sf::Color(20, 20, 20));
+
+    window.draw(backgroundSprite);
+    window.draw(sidebar);
+
+    sf::Text title(font, "Echipa Ta", 24);
+    title.setPosition({20.0f, 20.0f});
+    window.draw(title);
+
+    for (const auto& item : sidebarVisuals) {
+        window.draw(item.sprite);
+        window.draw(item.info);
+    }
+
+    window.draw(statsBackground);
+    window.draw(ratingDisplay);
+    window.draw(chemistryDisplay);
+
+    if (!draftCompleted) {
+        string titleText;
+        if (choosingManager) {
+            titleText = "Alege Managerul";
+        } else {
+
+            if (static_cast<size_t>(currentPositionIndex) < formation.getPositions().size()) {
+                titleText = "Alege: " + formation.getPositions()[currentPositionIndex];
+            } else {
+                titleText = "Finalizare...";
+            }
+        }
+
+        sf::Text pickText(font, titleText, 30);
+        pickText.setFillColor(sf::Color::White);
+        pickText.setOutlineColor(sf::Color::Black);
+        pickText.setOutlineThickness(2);
+        sf::FloatRect tr = pickText.getLocalBounds();
+        pickText.setOrigin({tr.size.x/2.0f, 0.0f});
+        pickText.setPosition({765.0f, 200.0f});
+        window.draw(pickText);
+
+        sf::Vector2f mPos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
+        bool showPreview = false;
+
+        for (auto& opt : currentOptions) {
+            if (opt.shape.getGlobalBounds().contains(mPos)) {
+                opt.shape.setOutlineColor(sf::Color::Yellow);
+
+                if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Right)) {
+                    showPreview = true;
+
+                    const sf::Texture* fallbackTexture = &defaultCardTexture;
+                    if (opt.isManager) {
+                        fallbackTexture = &defaultManagerTexture;
+                    }
+
+                    const sf::Texture& textureToShow = (opt.texture.getSize().x > 0) ? opt.texture : *fallbackTexture;
+
+                    previewSprite.setTexture(textureToShow, true);
+
+                    sf::FloatRect bounds = previewSprite.getLocalBounds();
+                    previewSprite.setOrigin({bounds.size.x/2.0f, bounds.size.y/2.0f});
+                    previewSprite.setPosition({640.0f, 360.0f});
+
+                    if (textureToShow.getSize().x < 200) {
+                        previewSprite.setScale({3.0f, 3.0f});
+                    } else {
+                        previewSprite.setScale({1.0f, 1.0f});
+                    }
+                }
+            } else {
+                opt.shape.setOutlineColor(sf::Color::White);
+            }
+
+            window.draw(opt.shape);
+            window.draw(opt.sprite);
+            window.draw(opt.nameText);
+            window.draw(opt.ratingText);
+        }
+
+        if (showPreview) {
+            sf::RectangleShape overlay({1280.0f, 720.0f});
+            overlay.setFillColor(sf::Color(0,0,0,200));
+            window.draw(overlay);
+            window.draw(previewSprite);
+        }
+    } else {
+        sf::Text doneText(font, "ECHIPA COMPLETA!", 50);
+        doneText.setFillColor(sf::Color::Green);
+        sf::FloatRect dBounds = doneText.getLocalBounds();
+        doneText.setOrigin({dBounds.size.x/2.0f, dBounds.size.y/2.0f});
+        doneText.setPosition({765.0f, 300.0f});
+        window.draw(doneText);
+    }
+
+    window.display();
 }

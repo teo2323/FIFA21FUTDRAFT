@@ -12,7 +12,7 @@ public:
     Formation(const Formation& other) = default;
     Formation& operator=(const Formation& other) = default;
     ~Formation() = default;
-
+    [[nodiscard]] const std::string& getName() const;
     [[nodiscard]] const std::vector<std::string>& getPositions() const;
     [[nodiscard]] const std::vector<std::pair<std::string, std::string>>& getLinks() const;
 

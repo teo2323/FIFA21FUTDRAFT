@@ -17,9 +17,21 @@ void Database::loadPlayers(const string& filename, const string& positionGroup) 
     }
     fin.close();
 }
+void Database::loadManagers(const string& filename) {
+    ifstream fin(filename);
+    if (!fin.is_open()) {
+        cerr << "Nu s-a putut deschide fisierul manageri: " << filename << "\n";
+        return;
+    }
+    string name, nat, league;
+    while (fin >> name >> nat >> league) {
+        managers.emplace_back(name, nat, league);
+    }
+    fin.close();
+}
 
 void Database::loadAll() {
-    // Asigura-te ca fisierele .txt sunt in folderul executabilului (cmake-build-debug)
+
     loadPlayers("LB.txt", "LB");
     loadPlayers("GK.txt", "GK");
     loadPlayers("CB.txt", "CB");
@@ -30,8 +42,11 @@ void Database::loadAll() {
     loadPlayers("LW.txt", "LW");
     loadPlayers("RW.txt", "RW");
     loadPlayers("ST.txt", "ST");
+    loadManagers("MANAGER.txt");
 }
-
+const vector<Manager>& Database::getManagers() const {
+    return managers;
+}
 const vector<Player>& Database::getPlayersByPosition(const string& positionGroup) const {
     static const vector<Player> empty{};
     auto it = playersByPosition.find(positionGroup);

@@ -25,9 +25,7 @@ int Team::computeChemistry() const {
         const Player& p1 = kv1.second;
         int localChem = 10; // Base chemistry
         
-        // Simulare simplificata (adaptare dupa codul tau)
-        // In realitate, trebuie sa verifici toti vecinii. 
-        // Aici pastram logica ta: verificam toti jucatorii si daca au link in formatie, calculam.
+
         
         for (const auto& kv2 : players) {
             const string pos2 = kv2.first;

@@ -5,8 +5,8 @@ using namespace std;
 
 Player::Player(string n, string nat, string l, string c, string pos, string r, int rate)
     : name(std::move(n)), nationality(std::move(nat)), league(std::move(l)),
-      club(std::move(c)), position(std::move(pos)), role(std::move(r)), rating(rate) {}
-
+      club(std::move(c)), position(std::move(pos)), role(std::move(r)), rating(rate) {imagePath = "images/players/" + name + ".png";}
+const string& Player::getImagePath() const { return imagePath; }
 const string& Player::getName() const { return name; }
 const string& Player::getNationality() const { return nationality; }
 const string& Player::getLeague() const { return league; }
@@ -14,6 +14,7 @@ const string& Player::getClub() const { return club; }
 const string& Player::getPosition() const { return position; }
 const string& Player::getRole() const { return role; }
 int Player::getRating() const { return rating; }
+
 
 int Player::calcLink(const Player& other) const {
     if (league == other.league && club == other.club && nationality == other.nationality) return 3;

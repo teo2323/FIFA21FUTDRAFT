@@ -24,7 +24,7 @@ Formation::Formation(const string& n) : name(n) {
                  {"LCM", "LB"}, {"LB", "LCB"}, {"LCB", "CB"}, {"CB", "RCB"}, {"LCB", "LCM"}, {"RCB", "RCM"}, {"CB", "CDM"}, {"CDM", "LCM"}, {"CDM", "RCM"}, {"CDM", "LST"}, {"CDM", "RST"}};
     }
 }
-
+const string& Formation::getName() const{return name;}
 const vector<string>& Formation::getPositions() const { return positions; }
 const vector<pair<string, string>>& Formation::getLinks() const { return links; }
 
