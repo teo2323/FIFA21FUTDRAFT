@@ -6,7 +6,7 @@
 #include "DraftSession.h"
 #include "Formation.h"
 #include "Testers.h"
-
+x
 struct MenuButton {
     sf::RectangleShape shape;
     sf::Text label;
