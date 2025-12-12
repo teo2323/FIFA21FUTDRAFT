@@ -180,7 +180,6 @@ void DraftSession::generateOptions() {
 
     const vector<string>& positions = formation.getPositions();
 
-
     if (static_cast<size_t>(currentPositionIndex) >= positions.size()) {
         if (!choosingManager) {
             choosingManager = true;
@@ -195,15 +194,29 @@ void DraftSession::generateOptions() {
     string currentPos = positions[currentPositionIndex];
     string dbGroup = positionMap[currentPos];
 
-    vector<Player> candidates = db.getPlayersByPosition(dbGroup);
+    // PASUL 1: Luam TOTI candidatii din baza de date
+    vector<Player> allCandidates = db.getPlayersByPosition(dbGroup);
 
+    // PASUL 2: Filtram jucatorii (pastram doar pe cei care NU sunt in echipa)
+    vector<Player> validCandidates;
+    validCandidates.reserve(allCandidates.size());
+
+    for (const auto& p : allCandidates) {
+        // Aceasta functie verifica daca numele jucatorului exista deja in map-ul team.players
+        if (!team.isPlayerInTeam(p)) {
+            validCandidates.push_back(p);
+        }
+    }
+
+    // PASUL 3: Lucram doar cu lista filtrata (validCandidates)
     static std::random_device rd;
     static std::mt19937 g(rd());
-    std::shuffle(candidates.begin(), candidates.end(), g);
+    std::shuffle(validCandidates.begin(), validCandidates.end(), g);
 
+    // Atentie: Folosim validCandidates.size(), nu allCandidates
+    int count = min(static_cast<int>(validCandidates.size()), 5);
 
-    int count = min(static_cast<int>(candidates.size()), 5);
-
+    // Restul calculelor raman la fel...
     float cardW = 140.0f; float cardH = 200.0f; float gap = 20.0f;
     float totalW = (static_cast<float>(count) * cardW) + (static_cast<float>(count - 1) * gap);
     float startX = 250.0f + (1030.0f - totalW) / 2.0f;
@@ -215,17 +228,22 @@ void DraftSession::generateOptions() {
         currentOptions.emplace_back(font, dummyTexture);
         CardOption& card = currentOptions.back();
 
-        card.player = candidates[i];
+        // ATENTIE: Luam jucatorul din validCandidates[i]
+        card.player = validCandidates[i];
+
+        // ... RESTUL CODULUI ESTE IDENTIC CA INAINTE ...
         card.shape.setSize({cardW, cardH});
         card.shape.setFillColor(sf::Color(40, 40, 40, 200));
         card.shape.setOutlineColor(sf::Color::White);
         card.shape.setOutlineThickness(2);
 
-
         float posX = startX + static_cast<float>(i) * (cardW + gap);
         card.shape.setPosition({posX, startY});
 
-        bool loadSuccess = card.texture.loadFromFile(card.player.getImagePath());
+        bool loadSuccess = false;
+        if (!card.player.getImagePath().empty()) {
+            loadSuccess = card.texture.loadFromFile(card.player.getImagePath());
+        }
 
         if (loadSuccess) {
             card.texture.setSmooth(true);
@@ -233,7 +251,6 @@ void DraftSession::generateOptions() {
         } else {
             card.sprite.setTexture(defaultCardTexture, true);
         }
-
 
         sf::FloatRect bounds = card.sprite.getLocalBounds();
         if (bounds.size.x > 0 && bounds.size.y > 0) {
@@ -245,7 +262,6 @@ void DraftSession::generateOptions() {
             float spriteW = bounds.size.x * scale;
             card.sprite.setPosition({posX + (cardW - spriteW) / 2.0f, startY + 10.0f});
         }
-
 
         card.nameText.setString(card.player.getName());
         card.nameText.setCharacterSize(14);
