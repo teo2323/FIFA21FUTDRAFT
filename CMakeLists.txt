@@ -72,6 +72,7 @@ add_executable(${MAIN_EXECUTABLE_NAME}
         DraftSession.h
         Testers.cpp
         Testers.h
+        Exception.h
 )
 
 # NOTE: Add all defined targets (e.g. executables, libraries, etc. )
