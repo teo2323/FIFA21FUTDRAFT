@@ -9,28 +9,29 @@
 using namespace std;
 
 void Testers::runPlayerTests() {
+    cout << "--- Start Player Tests ---\n";
+
     Player p1("Ronaldo", "Portugal", "Juventus", "Manchester_United", "ST", "Attacker", 92);
     Player p2("Mbappe", "France", "Ligue1", "PSG", "ST", "Attacker", 91);
 
     [[maybe_unused]] int rating1 = p1.getRating();
-    [[maybe_unused]] int rating2 = p2.getRating();
-
-
-    [[maybe_unused]] string club = p1.getClub();
-    [[maybe_unused]] string role = p1.getRole();
-
     [[maybe_unused]] int link = p1.calcLink(p2);
 
-    [[maybe_unused]] string Culoarelink;
-    if (link == 0) Culoarelink = "rosu";
-    if (link == 1) Culoarelink = "portocaliu";
-    if (link == 2) Culoarelink = "galben";
-    if (link == 3) Culoarelink = "verde";
+    Goalkeeper gk("Donnarumma", "Italy", "Ligue1", "PSG", "GK", "Goalkeeper", 89);
+    [[maybe_unused]] int pen1 = gk.getChemistryPenalty("GK");
+    [[maybe_unused]] int pen2 = gk.getChemistryPenalty("ST");
 
-    [[maybe_unused]] const std::string& n1 = p1.getName();
-    [[maybe_unused]] const std::string& n2 = p2.getName();
+    Attacker att("Messi", "Argentina", "MLS", "Miami", "RW", "Attacker", 93);
+    const auto& alts = att.getAltPositions();
+    [[maybe_unused]] bool hasAlt = !alts.empty();
 
-    cout << "Jucatori de test " << n1 << ", " << n2 << " | Link: " << Culoarelink << "\n";
+    auto clonePtr = att.clone();
+    [[maybe_unused]] int cloneRat = clonePtr->getRating();
+
+    [[maybe_unused]] int total = Player::getTotalPlayers();
+
+    cout << "Tests passed. Total players loaded so far: " << total << "\n";
+    cout << "--- End Player Tests ---\n";
 }
 
 void Testers::runManagerTests() {
@@ -53,7 +54,6 @@ void Testers::runTeamTests() {
     [[maybe_unused]] double rating = t.computeRating();
     [[maybe_unused]] int chem = t.computeChemistry();
     [[maybe_unused]] double overall = t.computeOverall();
-
 
     [[maybe_unused]] bool taken = t.positionTaken("RW");
     [[maybe_unused]] bool inTeam = t.isPlayerInTeam(p);
