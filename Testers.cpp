@@ -15,6 +15,11 @@ void Testers::runPlayerTests() {
     Player p2("Mbappe", "France", "Ligue1", "PSG", "ST", "Attacker", 91);
 
     [[maybe_unused]] int rating1 = p1.getRating();
+
+    // [FIX] Re-adaugam apelurile pentru a scapa de warning-urile cppCheck
+    [[maybe_unused]] string club = p1.getClub();
+    [[maybe_unused]] string role = p1.getRole();
+
     [[maybe_unused]] int link = p1.calcLink(p2);
 
     Goalkeeper gk("Donnarumma", "Italy", "Ligue1", "PSG", "GK", "Goalkeeper", 89);
