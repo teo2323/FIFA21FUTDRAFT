@@ -5,6 +5,7 @@
 #include "Formation.h"
 #include <iostream>
 #include <string>
+#include <memory>
 
 using namespace std;
 
@@ -16,7 +17,6 @@ void Testers::runPlayerTests() {
 
     [[maybe_unused]] int rating1 = p1.getRating();
 
-    
     [[maybe_unused]] string club = p1.getClub();
     [[maybe_unused]] string role = p1.getRole();
 
@@ -54,10 +54,10 @@ void Testers::runTeamTests() {
     Formation f("433");
     Team t(f);
 
-
     auto p = make_unique<Attacker>("Messi", "Argentina", "LaLiga", "Barcelona", "RW", "Starter", 93);
 
-    Player& pRef = *p;
+
+    const Player& pRef = *p;
 
     t.addPlayer("RW", std::move(p));
 
@@ -67,6 +67,9 @@ void Testers::runTeamTests() {
 
     [[maybe_unused]] bool taken = t.positionTaken("RW");
     [[maybe_unused]] bool inTeam = t.isPlayerInTeam(pRef);
+
+
+    [[maybe_unused]] Player* ptr = t.getPlayerOnPosition("RW");
 
     cout << "Echipa test: rating=" << rating << " | chem=" << chem << " | overall=" << overall << "\n";
 }
