@@ -69,7 +69,7 @@ void Testers::runTeamTests() {
     [[maybe_unused]] bool inTeam = t.isPlayerInTeam(pRef);
 
 
-    [[maybe_unused]] Player* ptr = t.getPlayerOnPosition("RW");
+    [[maybe_unused]] const Player* ptr = t.getPlayerOnPosition("RW");
 
     cout << "Echipa test: rating=" << rating << " | chem=" << chem << " | overall=" << overall << "\n";
 }
