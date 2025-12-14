@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <random>
 #include <iostream>
+#include "Exception.h"
 using namespace std;
 
 DraftSession::DraftSession(sf::RenderWindow& win, const Formation& f)
@@ -46,7 +47,7 @@ DraftSession::DraftSession(sf::RenderWindow& win, const Formation& f)
 
 void DraftSession::loadResources() {
     if (!font.openFromFile("arial.ttf")) {
-        cerr << "Eroare: Nu am putut incarca fontul.\n";
+        throw FileMissingException("arial.ttf");
     }
 
 
