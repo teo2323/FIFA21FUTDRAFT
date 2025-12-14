@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <iomanip>
 #include <ranges>
-
+#include "Exception.h"
 using namespace std;
 
 Team::Team(const Formation& f) : formation(f) {}
@@ -84,6 +84,30 @@ Player* Team::getPlayerOnPosition(const std::string& pos) const {
         return it->second.get();
     }
     return nullptr;
+}
+
+void Team::swapPlayers(const string& pos1, const string& pos2) {
+
+    if (!players.contains(pos1) || !players.contains(pos2)) {
+        throw InvalidOperationException("Nu se poate face swap: Unul dintre sloturi este gol!");
+    }
+
+
+    Player* p1 = players[pos1].get();
+    Player* p2 = players[pos2].get();
+
+
+
+
+    if (p1->getRole() == "Goalkeeper" && pos2 != "GK") {
+        throw InvalidOperationException("Portarii nu pot juca pe pozitii din teren!");
+    }
+    if (p2->getRole() == "Goalkeeper" && pos1 != "GK") {
+        throw InvalidOperationException("Portarii nu pot juca pe pozitii din teren!");
+    }
+
+
+    std::swap(players[pos1], players[pos2]);
 }
 
 ostream& operator<<(ostream& os, const Team& t) {

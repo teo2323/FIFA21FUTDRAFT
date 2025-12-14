@@ -12,6 +12,7 @@ class Team {
     std::map<std::string, std::unique_ptr<Player>> players;
     Manager manager;
 public:
+    void swapPlayers(const std::string& pos1, const std::string& pos2);
     explicit Team(const Formation& f);
 
     Team(const Team& other);

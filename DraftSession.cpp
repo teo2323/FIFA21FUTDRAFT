@@ -35,7 +35,8 @@ DraftSession::DraftSession(sf::RenderWindow& win, const Formation& f)
       choosingManager(false),
       currentOptions(),
       sidebarVisuals(),
-      previewSprite(dummyTexture)
+      previewSprite(dummyTexture),
+      selectedSwapIndex(-1)
 {
     sidebarVisuals.reserve(20);
     sf::Texture dummy;
@@ -358,18 +359,89 @@ void DraftSession::handleInput() {
             isDrafting = false;
         }
         else if (const auto* kp = event->getIf<sf::Event::KeyPressed>()) {
-            if (kp->code == sf::Keyboard::Key::Escape) isDrafting = false;
+            if (kp->code == sf::Keyboard::Key::Escape) {
+                if (selectedSwapIndex != -1) {
+                    sidebarVisuals[selectedSwapIndex].sprite.setScale({0.15f, 0.15f});
+                    sidebarVisuals[selectedSwapIndex].sprite.setColor(sf::Color::White);
+                    selectedSwapIndex = -1;
+                } else {
+                    isDrafting = false;
+                }
+            }
         }
         else if (const auto* mp = event->getIf<sf::Event::MouseButtonPressed>()) {
             if (mp->button == sf::Mouse::Button::Left) {
-                if (!draftCompleted) {
-                    sf::Vector2f mPos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
+                sf::Vector2f mPos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
 
+                if (!draftCompleted) {
                     for (size_t i = 0; i < currentOptions.size(); ++i) {
                         if (currentOptions[i].shape.getGlobalBounds().contains(mPos)) {
-
                             selectPlayer(static_cast<int>(i));
                             break;
+                        }
+                    }
+                }
+
+                for (size_t i = 0; i < sidebarVisuals.size(); ++i) {
+                    if (sidebarVisuals[i].sprite.getGlobalBounds().contains(mPos)) {
+                        if (selectedSwapIndex == -1) {
+                            selectedSwapIndex = static_cast<int>(i);
+                            sidebarVisuals[i].sprite.setScale({0.18f, 0.18f});
+                            sidebarVisuals[i].sprite.setColor(sf::Color(200, 255, 200));
+                            cout << "Selectat pentru swap: Index " << i << "\n";
+                        }
+                        else if (selectedSwapIndex == static_cast<int>(i)) {
+                            sidebarVisuals[i].sprite.setScale({0.15f, 0.15f});
+                            sidebarVisuals[i].sprite.setColor(sf::Color::White);
+                            selectedSwapIndex = -1;
+                            cout << "Deselectat.\n";
+                        }
+                        else {
+                            try {
+                                size_t maxPlayers = formation.getPositions().size();
+
+
+                                if (static_cast<size_t>(selectedSwapIndex) >= maxPlayers || i >= maxPlayers) {
+                                    throw InvalidOperationException("Nu poti schimba Managerul cu un jucator!");
+                                }
+
+                                string pos1 = formation.getPositions()[selectedSwapIndex];
+                                string pos2 = formation.getPositions()[i];
+
+                                cout << "Incercare Swap: " << pos1 << " <-> " << pos2 << "\n";
+
+
+                                team.swapPlayers(pos1, pos2);
+
+
+                                std::swap(sidebarVisuals[selectedSwapIndex], sidebarVisuals[i]);
+
+
+                                sidebarVisuals[selectedSwapIndex].sprite.setTexture(sidebarVisuals[selectedSwapIndex].texture);
+                                sidebarVisuals[i].sprite.setTexture(sidebarVisuals[i].texture);
+
+
+                                float sidebarY_Select = 60.0f + static_cast<float>(selectedSwapIndex) * 50.0f;
+                                float sidebarY_Target = 60.0f + static_cast<float>(i) * 50.0f;
+
+                                sidebarVisuals[selectedSwapIndex].sprite.setPosition({20.0f, sidebarY_Select});
+                                sidebarVisuals[selectedSwapIndex].info.setPosition({80.0f, sidebarY_Select + 5.0f});
+
+                                sidebarVisuals[i].sprite.setPosition({20.0f, sidebarY_Target});
+                                sidebarVisuals[i].info.setPosition({80.0f, sidebarY_Target + 5.0f});
+
+                                updateStatsUI();
+                                cout << "Swap reusit!\n";
+
+                            } catch (const InvalidOperationException& e) {
+                                cerr << "SWAP ERROR: " << e.what() << "\n";
+                            }
+
+                            for(auto& sv : sidebarVisuals) {
+                                sv.sprite.setScale({0.15f, 0.15f});
+                                sv.sprite.setColor(sf::Color::White);
+                            }
+                            selectedSwapIndex = -1;
                         }
                     }
                 }

@@ -65,7 +65,7 @@ class DraftSession {
     std::vector<SelectedVisual> sidebarVisuals;
 
     sf::Sprite previewSprite;
-
+    int selectedSwapIndex;
 public:
     DraftSession(sf::RenderWindow& win, const Formation& f);
     ~DraftSession() = default;
