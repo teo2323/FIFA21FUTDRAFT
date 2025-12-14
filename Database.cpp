@@ -1,27 +1,40 @@
 #include "Database.h"
 #include <fstream>
-
+#include "Exception.h"
+#include <memory>
 using namespace std;
 
 void Database::loadPlayers(const string& filename, const string& positionGroup) {
     ifstream fin(filename);
     if (!fin.is_open()) {
-        cerr << "Nu s-a putut deschide fisierul: " << filename << "\n";
-        return;
+        throw FileMissingException(filename);
     }
     string name, nat, league, club, pos, role;
     int rating;
     while (fin >> name >> nat >> league >> club >> pos >> role >> rating) {
-        Player p(name, nat, league, club, pos, role, rating);
-        playersByPosition[positionGroup].emplace_back(std::move(p));
+        unique_ptr<Player> newPlayer;
+
+        if (role == "Goalkeeper") {
+            newPlayer = make_unique<Goalkeeper>(name, nat, league, club, pos, role, rating);
+        } else if (role == "Defender") {
+            newPlayer = make_unique<Defender>(name, nat, league, club, pos, role, rating);
+        } else if (role == "Midfielder") {
+            newPlayer = make_unique<Midfielder>(name, nat, league, club, pos, role, rating);
+        } else if (role == "Attacker") {
+            newPlayer = make_unique<Attacker>(name, nat, league, club, pos, role, rating);
+        } else {
+
+            newPlayer = make_unique<Player>(name, nat, league, club, pos, role, rating);
+        }
+
+        playersByPosition[positionGroup].push_back(std::move(newPlayer));
     }
     fin.close();
 }
 void Database::loadManagers(const string& filename) {
     ifstream fin(filename);
     if (!fin.is_open()) {
-        cerr << "Nu s-a putut deschide fisierul manageri: " << filename << "\n";
-        return;
+        throw FileMissingException(filename);
     }
     string name, nat, league;
     while (fin >> name >> nat >> league) {
@@ -47,8 +60,8 @@ void Database::loadAll() {
 const vector<Manager>& Database::getManagers() const {
     return managers;
 }
-const vector<Player>& Database::getPlayersByPosition(const string& positionGroup) const {
-    static const vector<Player> empty{};
+const vector<unique_ptr<Player>>& Database::getPlayersByPosition(const string& positionGroup) const {
+    static const vector<unique_ptr<Player>> empty{};
     auto it = playersByPosition.find(positionGroup);
     if (it == playersByPosition.end()) return empty;
     return it->second;

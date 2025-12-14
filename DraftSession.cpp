@@ -194,29 +194,27 @@ void DraftSession::generateOptions() {
     string currentPos = positions[currentPositionIndex];
     string dbGroup = positionMap[currentPos];
 
-    // PASUL 1: Luam TOTI candidatii din baza de date
-    vector<Player> allCandidates = db.getPlayersByPosition(dbGroup);
+    const auto& allCandidates = db.getPlayersByPosition(dbGroup);
 
-    // PASUL 2: Filtram jucatorii (pastram doar pe cei care NU sunt in echipa)
-    vector<Player> validCandidates;
+
+    vector<Player*> validCandidates;
     validCandidates.reserve(allCandidates.size());
 
-    for (const auto& p : allCandidates) {
-        // Aceasta functie verifica daca numele jucatorului exista deja in map-ul team.players
-        if (!team.isPlayerInTeam(p)) {
-            validCandidates.push_back(p);
+    for (const auto& uPtr : allCandidates) {
+
+        if (!team.isPlayerInTeam(*uPtr)) {
+            validCandidates.push_back(uPtr.get());
         }
     }
 
-    // PASUL 3: Lucram doar cu lista filtrata (validCandidates)
+
     static std::random_device rd;
     static std::mt19937 g(rd());
     std::shuffle(validCandidates.begin(), validCandidates.end(), g);
 
-    // Atentie: Folosim validCandidates.size(), nu allCandidates
     int count = min(static_cast<int>(validCandidates.size()), 5);
 
-    // Restul calculelor raman la fel...
+
     float cardW = 140.0f; float cardH = 200.0f; float gap = 20.0f;
     float totalW = (static_cast<float>(count) * cardW) + (static_cast<float>(count - 1) * gap);
     float startX = 250.0f + (1030.0f - totalW) / 2.0f;
@@ -228,10 +226,9 @@ void DraftSession::generateOptions() {
         currentOptions.emplace_back(font, dummyTexture);
         CardOption& card = currentOptions.back();
 
-        // ATENTIE: Luam jucatorul din validCandidates[i]
-        card.player = validCandidates[i];
+        card.playerPtr = validCandidates[i]->clone();
+        Player& pRef = *card.playerPtr;
 
-        // ... RESTUL CODULUI ESTE IDENTIC CA INAINTE ...
         card.shape.setSize({cardW, cardH});
         card.shape.setFillColor(sf::Color(40, 40, 40, 200));
         card.shape.setOutlineColor(sf::Color::White);
@@ -241,8 +238,8 @@ void DraftSession::generateOptions() {
         card.shape.setPosition({posX, startY});
 
         bool loadSuccess = false;
-        if (!card.player.getImagePath().empty()) {
-            loadSuccess = card.texture.loadFromFile(card.player.getImagePath());
+        if (!pRef.getImagePath().empty()) {
+            loadSuccess = card.texture.loadFromFile(pRef.getImagePath());
         }
 
         if (loadSuccess) {
@@ -263,14 +260,14 @@ void DraftSession::generateOptions() {
             card.sprite.setPosition({posX + (cardW - spriteW) / 2.0f, startY + 10.0f});
         }
 
-        card.nameText.setString(card.player.getName());
+        card.nameText.setString(pRef.getName());
         card.nameText.setCharacterSize(14);
         card.nameText.setFillColor(sf::Color::White);
         sf::FloatRect textRect = card.nameText.getLocalBounds();
         card.nameText.setOrigin({textRect.size.x/2.0f, 0.0f});
         card.nameText.setPosition({posX + cardW/2.0f, startY + cardH - 25.0f});
 
-        card.ratingText.setString(to_string(card.player.getRating()));
+        card.ratingText.setString(to_string(pRef.getRating()));
         card.ratingText.setCharacterSize(18);
         card.ratingText.setFillColor(sf::Color::Yellow);
         card.ratingText.setOutlineColor(sf::Color::Black);
@@ -313,25 +310,31 @@ void DraftSession::selectPlayer(int index) {
 
 
     string posLabel = formation.getPositions()[currentPositionIndex];
-    team.addPlayer(posLabel, choice.player);
-    cout << "Ales: " << choice.player.getName() << "\n";
-
-    const sf::Texture& textureToCopy = (choice.texture.getSize().x > 0) ? choice.texture : defaultCardTexture;
-    sidebarVisuals.emplace_back(font, textureToCopy);
-
-    SelectedVisual& sv = sidebarVisuals.back();
-    sv.sprite.setTexture(sv.texture, true);
 
 
-    float sidebarY = 60.0f + static_cast<float>(currentPositionIndex) * 50.0f;
+    if (choice.playerPtr) {
+        cout << "Ales: " << choice.playerPtr->getName() << "\n";
 
-    sv.sprite.setScale({0.15f, 0.15f});
-    sv.sprite.setPosition({20.0f, sidebarY});
+        int rating = choice.playerPtr->getRating();
 
-    sv.info.setString(posLabel + "\n" + to_string(choice.player.getRating()));
-    sv.info.setCharacterSize(14);
-    sv.info.setFillColor(sf::Color::White);
-    sv.info.setPosition({80.0f, sidebarY + 5.0f});
+        team.addPlayer(posLabel, std::move(choice.playerPtr));
+
+        const sf::Texture& textureToCopy = (choice.texture.getSize().x > 0) ? choice.texture : defaultCardTexture;
+        sidebarVisuals.emplace_back(font, textureToCopy);
+
+        SelectedVisual& sv = sidebarVisuals.back();
+        sv.sprite.setTexture(sv.texture, true);
+
+        float sidebarY = 60.0f + static_cast<float>(currentPositionIndex) * 50.0f;
+
+        sv.sprite.setScale({0.15f, 0.15f});
+        sv.sprite.setPosition({20.0f, sidebarY});
+
+        sv.info.setString(posLabel + "\n" + to_string(rating));
+        sv.info.setCharacterSize(14);
+        sv.info.setFillColor(sf::Color::White);
+        sv.info.setPosition({80.0f, sidebarY + 5.0f});
+    }
 
     updateStatsUI();
     currentPositionIndex++;
@@ -360,7 +363,7 @@ void DraftSession::handleInput() {
             if (mp->button == sf::Mouse::Button::Left) {
                 if (!draftCompleted) {
                     sf::Vector2f mPos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
-                    // [FIX] size_t i in loc de int i
+
                     for (size_t i = 0; i < currentOptions.size(); ++i) {
                         if (currentOptions[i].shape.getGlobalBounds().contains(mPos)) {
 

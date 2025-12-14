@@ -16,7 +16,7 @@ void Testers::runPlayerTests() {
 
     [[maybe_unused]] int rating1 = p1.getRating();
 
-    // [FIX] Re-adaugam apelurile pentru a scapa de warning-urile cppCheck
+    
     [[maybe_unused]] string club = p1.getClub();
     [[maybe_unused]] string role = p1.getRole();
 
@@ -53,15 +53,20 @@ void Testers::runManagerTests() {
 void Testers::runTeamTests() {
     Formation f("433");
     Team t(f);
-    Player p("Messi", "Argentina", "LaLiga", "Barcelona", "RW", "Starter", 93);
-    t.addPlayer("RW", p);
+
+
+    auto p = make_unique<Attacker>("Messi", "Argentina", "LaLiga", "Barcelona", "RW", "Starter", 93);
+
+    Player& pRef = *p;
+
+    t.addPlayer("RW", std::move(p));
 
     [[maybe_unused]] double rating = t.computeRating();
     [[maybe_unused]] int chem = t.computeChemistry();
     [[maybe_unused]] double overall = t.computeOverall();
 
     [[maybe_unused]] bool taken = t.positionTaken("RW");
-    [[maybe_unused]] bool inTeam = t.isPlayerInTeam(p);
+    [[maybe_unused]] bool inTeam = t.isPlayerInTeam(pRef);
 
     cout << "Echipa test: rating=" << rating << " | chem=" << chem << " | overall=" << overall << "\n";
 }

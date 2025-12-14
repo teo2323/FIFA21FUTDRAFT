@@ -73,13 +73,15 @@ Defender::Defender(string n, string nat, string l, string c, string pos, string 
     : Player(std::move(n), std::move(nat), std::move(l), std::move(c), std::move(pos), std::move(r), rate)
 {
 
-    alternativePositions = {"RB", "LB", "CB"};
+    alternativePositions = {"RB", "LB", "CB", "LCB", "RCB"};
 }
 
 unique_ptr<Player> Defender::clone() const { return make_unique<Defender>(*this); }
 
 int Defender::getChemistryPenalty(const string& currentSlot) const {
-    if (currentSlot == position) return 0;
+    bool exact = (currentSlot == position);
+    bool isCentral = (position == "CB" && (currentSlot == "LCB" || currentSlot == "RCB"));
+    if (exact || isCentral) return 0;
 
     if (alternativePositions.contains(currentSlot)) return -2;
     return -5;
@@ -90,13 +92,15 @@ Midfielder::Midfielder(string n, string nat, string l, string c, string pos, str
     : Player(std::move(n), std::move(nat), std::move(l), std::move(c), std::move(pos), std::move(r), rate)
 {
 
-    alternativePositions = {"LM", "RM", "CM"};
+    alternativePositions = {"LM", "RM", "CDM", "LCM", "RCM"};
 }
 
 unique_ptr<Player> Midfielder::clone() const { return make_unique<Midfielder>(*this); }
 
 int Midfielder::getChemistryPenalty(const string& currentSlot) const {
-    if (currentSlot == position) return 0;
+    bool exact = (currentSlot == position);
+    bool isCentral = (position == "CM" && (currentSlot == "LCM" || currentSlot == "RCM" || currentSlot == "CDM"));
+    if (exact || isCentral) return 0;
     if (alternativePositions.contains(currentSlot)) return -2;
     return -5;
 }
@@ -107,13 +111,15 @@ Attacker::Attacker(string n, string nat, string l, string c, string pos, string 
     : Player(std::move(n), std::move(nat), std::move(l), std::move(c), std::move(pos), std::move(r), rate)
 {
 
-    alternativePositions = {"ST", "LW", "RW"};
+    alternativePositions = {"ST", "LW", "RW", "RST", "LST"};
 }
 
 unique_ptr<Player> Attacker::clone() const { return make_unique<Attacker>(*this); }
 
 int Attacker::getChemistryPenalty(const string& currentSlot) const {
-    if (currentSlot == position) return 0;
+    bool exact = (currentSlot == position);
+    bool isStriker = (position == "ST" && (currentSlot == "LST" || currentSlot == "RST"));
+    if (exact || isStriker) return 0;
     if (alternativePositions.contains(currentSlot)) return -2;
     return -5;
 }

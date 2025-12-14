@@ -3,7 +3,6 @@
 #include <map>
 #include <string>
 #include <vector>
-// [FIX 1] Am sters #include <iostream> de aici (nu e folosit in header)
 #include "Formation.h"
 #include "Team.h"
 #include "Database.h"
@@ -15,7 +14,8 @@ struct CardOption {
     sf::Sprite sprite;
     sf::Text nameText;
     sf::Text ratingText;
-    Player player;
+
+    std::unique_ptr<Player> playerPtr;
     Manager manager;
     bool isManager;
 
@@ -31,8 +31,8 @@ struct SelectedVisual {
 
 
     SelectedVisual(const sf::Font& font, sf::Texture texCopy)
-        : texture(std::move(texCopy)), // Muta resursa eficient
-          sprite(texture),             // Leaga sprite-ul de noua textura
+        : texture(std::move(texCopy)),
+          sprite(texture),
           info(font) {}
 };
 

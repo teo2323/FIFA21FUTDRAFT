@@ -5,24 +5,31 @@
 #include "Formation.h"
 #include "Player.h"
 #include "Manager.h"
+#include <memory>
 
 class Team {
     Formation formation;
-    std::map<std::string, Player> players;
+    std::map<std::string, std::unique_ptr<Player>> players;
     Manager manager;
 public:
     explicit Team(const Formation& f);
-    Team(const Team& other) = default;
-    Team& operator=(const Team& other) = default;
+
+    Team(const Team& other);
+    Team& operator=(const Team& other);
+
     ~Team() = default;
 
-    void addPlayer(const std::string& pos, const Player& p);
+    void addPlayer(const std::string& pos, std::unique_ptr<Player> p);
     void setManager(const Manager& m);
+
     [[nodiscard]] bool positionTaken(const std::string& pos) const;
     [[nodiscard]] double computeRating() const;
     [[nodiscard]] int computeChemistry() const;
     [[nodiscard]] double computeOverall() const;
+
     [[nodiscard]] bool isPlayerInTeam(const Player& p) const;
+
+    [[nodiscard]] Player* getPlayerOnPosition(const std::string& pos) const;
 
     friend std::ostream& operator<<(std::ostream& os, const Team& t);
 };
