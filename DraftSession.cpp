@@ -356,7 +356,7 @@ void DraftSession::updateStatsUI() {
         if (i < positions.size()) {
             string posLabel = positions[i];
 
-            Player* pPtr = team.getPlayerOnPosition(posLabel);
+            const Player* pPtr = team.getPlayerOnPosition(posLabel);
 
             if (pPtr) {
                 int indivChem = team.getPlayerChemistry(posLabel);
