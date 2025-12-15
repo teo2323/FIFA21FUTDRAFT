@@ -31,6 +31,6 @@ public:
     [[nodiscard]] bool isPlayerInTeam(const Player& p) const;
 
     [[nodiscard]] Player* getPlayerOnPosition(const std::string& pos) const;
-
+    [[nodiscard]] int getPlayerChemistry(const std::string& pos) const;
     friend std::ostream& operator<<(std::ostream& os, const Team& t);
 };

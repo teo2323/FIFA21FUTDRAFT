@@ -1,7 +1,6 @@
 #include "Team.h"
 #include <algorithm>
 #include <iomanip>
-#include <ranges>
 #include "Exception.h"
 using namespace std;
 
@@ -39,34 +38,50 @@ double Team::computeRating() const {
     return sum / static_cast<double>(players.size());
 }
 
-int Team::computeChemistry() const {
-    int chemistry = 0;
-    for (const auto& kv1 : players) {
-        const string pos1 = kv1.first;
-        const Player& p1 = *kv1.second;
-        int localChem = 10;
 
-        localChem += p1.getChemistryPenalty(pos1);
+int Team::getPlayerChemistry(const std::string& pos) const {
+    if (!players.contains(pos)) return 0;
 
-        for (const auto& kv2 : players) {
-            const string pos2 = kv2.first;
-            const Player& p2 = *kv2.second;
-            if (pos1 == pos2) continue;
-            
-            for (const auto& link : formation.getLinks()) {
-                if ((link.first == pos1 && link.second == pos2) || (link.second == pos1 && link.first == pos2)) {
-                    int linkType = p1.calcLink(p2);
-                    if (linkType == 0) localChem -= 3;
-                    else if (linkType == 2) localChem += 3;
-                    else if (linkType == 3) localChem = 10; 
+    const Player& p = *players.at(pos);
+    int localChem = 10;
+
+    localChem += p.getChemistryPenalty(pos);
+
+    for (const auto& otherPair : players) {
+        const string& otherPos = otherPair.first;
+        const Player& otherP = *otherPair.second;
+
+        if (pos == otherPos) continue;
+
+        for (const auto& link : formation.getLinks()) {
+            if ((link.first == pos && link.second == otherPos) ||
+                (link.second == pos && link.first == otherPos)) {
+
+                int linkType = p.calcLink(otherP);
+                if (linkType == 0) localChem -= 3;
+                else if (linkType == 2) localChem += 3;
+                else if (linkType == 3) localChem = 10;
                 }
-            }
         }
-        localChem = max(0, min(10, localChem));
-        int withManager = min(10, max(3, localChem + manager.getChemistryBonus(p1)));
-        chemistry += withManager;
     }
-    return min(100, chemistry);
+
+    localChem = max(0, min(10, localChem));
+
+    if (manager.getName() != "") {
+        localChem = min(10, localChem + manager.getChemistryBonus(p));
+    }
+
+    return localChem;
+}
+int Team::computeChemistry() const {
+    int totalChemistry = 0;
+
+    for (const auto& pair : players) {
+
+        totalChemistry += getPlayerChemistry(pair.first);
+    }
+
+    return min(100, totalChemistry);
 }
 
 double Team::computeOverall() const { return computeRating() + computeChemistry(); }
@@ -93,8 +108,8 @@ void Team::swapPlayers(const string& pos1, const string& pos2) {
     }
 
 
-    Player* p1 = players[pos1].get();
-    Player* p2 = players[pos2].get();
+   const Player* p1 = players[pos1].get();
+   const  Player* p2 = players[pos2].get();
 
 
 

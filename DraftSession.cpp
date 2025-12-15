@@ -344,12 +344,36 @@ void DraftSession::selectPlayer(int index) {
 }
 
 void DraftSession::updateStatsUI() {
-
     int rating = static_cast<int>(team.computeRating());
     int chem = team.computeChemistry();
 
     ratingDisplay.setString("RATING: " + to_string(rating));
     chemistryDisplay.setString("CHEMISTRY: " + to_string(chem));
+
+    const auto& positions = formation.getPositions();
+
+    for (size_t i = 0; i < sidebarVisuals.size(); ++i) {
+        if (i < positions.size()) {
+            string posLabel = positions[i];
+
+            Player* pPtr = team.getPlayerOnPosition(posLabel);
+
+            if (pPtr) {
+                int indivChem = team.getPlayerChemistry(posLabel);
+
+
+                string infoText = posLabel + "     Ch: " + to_string(indivChem) + "\n" +
+                                  to_string(pPtr->getRating());
+
+                sidebarVisuals[i].info.setString(infoText);
+
+                if (indivChem == 10) sidebarVisuals[i].info.setFillColor(sf::Color::Green);
+                else if (indivChem >= 7) sidebarVisuals[i].info.setFillColor(sf::Color::Yellow);
+                else if (indivChem >= 4) sidebarVisuals[i].info.setFillColor(sf::Color(255, 165, 0)); // Orange
+                else sidebarVisuals[i].info.setFillColor(sf::Color::Red);
+            }
+        }
+    }
 }
 
 void DraftSession::handleInput() {
