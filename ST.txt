@@ -3,3 +3,5 @@ Luis_Suarez Uruguay LaLiga Barcelona ST Attacker 87
 Cristiano_Ronaldo Portugal SerieA Juventus ST Attacker 95
 Kylian_Mbappe France Ligue1 PSG ST Attacker 97
 Robert_Lewandowski Poland Bundesliga Bayern_Munich ST Attacker 98
+Denis_Alibec Romania Superliga Astra_Giurgiu ST Attacker 72
+Pele Brazil Legends Legends ST Attacker 99

@@ -42,8 +42,8 @@ int Player::getChemistryPenalty(const string& currentSlot) const {
 
 int Player::calcLink(const Player& other) const {
     if (league == other.league && club == other.club && nationality == other.nationality) return 3;
-    if ((league == other.league && nationality == other.nationality) || (club == other.club && nationality != other.nationality)) return 2;
-    if (league == other.league || nationality == other.nationality) return 1;
+    if ((league == other.league && nationality == other.nationality) || (club == other.club && nationality != other.nationality) || (nationality == other.nationality && other.league == "Legends")) return 2;
+    if (league == other.league || nationality == other.nationality || other.league == "Legends") return 1;
     return 0;
 }
 
