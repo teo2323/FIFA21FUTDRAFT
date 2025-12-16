@@ -28,6 +28,7 @@ DraftSession::DraftSession(sf::RenderWindow& win, const Formation& f)
       dummyTexture(),
       ratingDisplay(font),
       chemistryDisplay(font),
+      overallDisplay(font),
       statsBackground(),
       currentPositionIndex(0),
       isDrafting(true),
@@ -89,19 +90,23 @@ void DraftSession::loadResources() {
     }
     defaultManagerTexture.setSmooth(true);
 
-    statsBackground.setSize(sf::Vector2f(250.f, 70.f));
+    statsBackground.setSize(sf::Vector2f(250.f, 100.f));
     statsBackground.setFillColor(sf::Color(0, 0, 0, 180));
     statsBackground.setOutlineColor(sf::Color::White);
     statsBackground.setOutlineThickness(1);
-    statsBackground.setPosition({1060.f, 20.f});
+    statsBackground.setPosition({280.f, 20.f});
 
     ratingDisplay.setCharacterSize(18);
     ratingDisplay.setFillColor(sf::Color::Yellow);
-    ratingDisplay.setPosition({1070.f, 25.f});
+    ratingDisplay.setPosition({280.f, 25.f});
 
     chemistryDisplay.setCharacterSize(18);
     chemistryDisplay.setFillColor(sf::Color::Cyan);
-    chemistryDisplay.setPosition({1070.f, 50.f});
+    chemistryDisplay.setPosition({280.f, 50.f});
+
+    overallDisplay.setCharacterSize(18);
+    overallDisplay.setFillColor(sf::Color::Green);
+    overallDisplay.setPosition({280.f, 75.f});
 
     updateStatsUI();
 }
@@ -294,10 +299,10 @@ void DraftSession::selectPlayer(int index) {
         SelectedVisual& sv = sidebarVisuals.back();
         sv.sprite.setTexture(sv.texture, true);
 
-        float sidebarCenterX = 125.0f;
-        float mY = 120.0f;
+        float sidebarCenterX = 350.0f;
+        float mY = 230.0f;
 
-        sv.sprite.setScale({0.2f, 0.2f});
+        sv.sprite.setScale({0.9f, 0.9f});
         sf::FloatRect b = sv.sprite.getLocalBounds();
         sv.sprite.setOrigin({b.size.x/2, b.size.y/2});
         sv.sprite.setPosition({sidebarCenterX, mY});
@@ -308,7 +313,7 @@ void DraftSession::selectPlayer(int index) {
 
         sf::FloatRect tr = sv.info.getLocalBounds();
         sv.info.setOrigin({tr.size.x/2, 0});
-        sv.info.setPosition({sidebarCenterX, mY + 60.0f});
+        sv.info.setPosition({sidebarCenterX, mY + 100.0f});
 
         updateStatsUI();
         draftCompleted = true;
@@ -356,9 +361,11 @@ void DraftSession::selectPlayer(int index) {
 void DraftSession::updateStatsUI() {
     int rating = static_cast<int>(team.computeRating());
     int chem = team.computeChemistry();
+    int overall = static_cast<int>(team.computeOverall());
 
     ratingDisplay.setString("RATING: " + to_string(rating));
     chemistryDisplay.setString("CHEMISTRY: " + to_string(chem));
+    overallDisplay.setString("OVERALL: " + to_string(overall));
 
     const auto& positions = formation.getPositions();
     const auto& coords = formation.getCoordinates();
@@ -501,7 +508,7 @@ void DraftSession::draw() {
     window.draw(statsBackground);
     window.draw(ratingDisplay);
     window.draw(chemistryDisplay);
-
+    window.draw(overallDisplay);
     if (!draftCompleted) {
         string titleText;
         if (choosingManager) {

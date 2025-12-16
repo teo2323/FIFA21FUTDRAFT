@@ -54,6 +54,7 @@ class DraftSession {
     sf::Texture dummyTexture;
     sf::Text ratingDisplay;
     sf::Text chemistryDisplay;
+    sf::Text overallDisplay;
     sf::RectangleShape statsBackground;
 
 
