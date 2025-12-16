@@ -16,12 +16,12 @@ public:
     explicit Team(const Formation& f);
 
     Team(const Team& other);
-    Team& operator=(const Team& other);
-
+    Team& operator=(Team other);
     ~Team() = default;
 
     void addPlayer(const std::string& pos, std::unique_ptr<Player> p);
     void setManager(const Manager& m);
+    friend void swap(Team& first, Team& second) noexcept;
 
     [[nodiscard]] bool positionTaken(const std::string& pos) const;
     [[nodiscard]] double computeRating() const;

@@ -11,15 +11,15 @@ Team::Team(const Team& other) : formation(other.formation), manager(other.manage
         players[pair.first] = pair.second->clone();
     }
 }
-Team& Team::operator=(const Team& other) {
-    if (this != &other) {
-        formation = other.formation;
-        manager = other.manager;
-        players.clear();
-        for (const auto& pair : other.players) {
-            players[pair.first] = pair.second->clone();
-        }
-    }
+void swap(Team& first, Team& second) noexcept {
+    using std::swap;
+    swap(first.formation, second.formation);
+    swap(first.manager, second.manager);
+    swap(first.players, second.players);
+}
+
+Team& Team::operator=(Team other) {
+    swap(*this, other);
     return *this;
 }
 
