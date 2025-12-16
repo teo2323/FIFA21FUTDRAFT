@@ -19,9 +19,9 @@ Formation::Formation(const string& n) : name(n) {
         positions = {"GK", "LB", "LCB", "RCB", "RB", "LM", "LCM", "RCM", "RM", "LST", "RST"};
         coordinates = {
             {855, 600}, // GK
-            {530, 500}, {700, 530}, {1000, 530}, {1180, 500},
-            {530, 280}, {712, 330}, {995, 330}, {1180, 280},
-            {730, 110}, {970, 110}
+            {530, 500}, {700, 530}, {1000, 530}, {1180, 500}, // Fundasi (la fel ca 433)
+            {530, 280}, {712, 330}, {995, 330}, {1180, 280},  // Mijlocasi (Linie dreapta)
+            {730, 110}, {970, 110} // Atacanti (2 varfuri)
         };
         links = {{"GK", "RCB"}, {"RCB", "RB"}, {"RB", "RM"}, {"RM", "RST"}, {"RST", "LST"}, {"LST", "LM"}, {"LM", "LB"}, {"LB", "LCB"},
                  {"LCB", "RCB"}, {"LCB", "GK"}, {"LM", "LCM"}, {"LCM", "RCM"}, {"RCM", "RM"}, {"LST", "LCM"}, {"RST", "RCM"}, {"LCM", "LCB"}, {"RCM", "RCB"}};
@@ -29,9 +29,9 @@ Formation::Formation(const string& n) : name(n) {
     } else if (n == "343") {
         positions = {"GK", "LCB", "CB", "RCB", "LM", "LCM", "RCM", "RM", "LW", "ST", "RW"};
         coordinates = {
-            {845, 630}, // GK
+            {845, 630},
             {585, 440}, {845, 440}, {1100, 440},
-            {510, 270}, {710, 300}, {980, 300},
+            {510, 270}, {710, 300}, {980, 300}, {1180, 270},
             {615, 110}, {845, 95}, {1065, 110}
         };
         links = {{"GK", "LCB"}, {"GK", "CB"}, {"GK", "RCB"}, {"RCB", "RM"}, {"RM", "RW"}, {"RW", "ST"}, {"ST", "LW"}, {"LW", "LM"},
