@@ -38,7 +38,7 @@ DraftSession::DraftSession(sf::RenderWindow& win, const Formation& f)
       previewSprite(dummyTexture),
       selectedSwapIndex(-1)
 {
-    sidebarVisuals.reserve(20);
+    sidebarVisuals.reserve(12);
     sf::Texture dummy;
     previewSprite.setTexture(dummy);
 
@@ -67,19 +67,20 @@ void DraftSession::loadResources() {
 
     string path = "images/formations/" + formation.getName() + ".png";
     if (backgroundTexture.loadFromFile(path)) {
+
         backgroundTexture.setSmooth(true);
         backgroundSprite.setTexture(backgroundTexture, true);
 
         sf::FloatRect bgBounds = backgroundSprite.getLocalBounds();
         backgroundSprite.setOrigin({bgBounds.size.x/2.0f, bgBounds.size.y/2.0f});
-        backgroundSprite.setPosition({640.0f + 100.0f, 360.0f});
+        backgroundSprite.setPosition({765.0f, 360.0f});
 
         float scaleY = 720.0f / bgBounds.size.y;
         backgroundSprite.setScale({scaleY, scaleY});
     }
 
     sidebar.setSize(sf::Vector2f(250.f, 720.f));
-    sidebar.setFillColor(sf::Color(30, 30, 30, 240));
+    sidebar.setFillColor(sf::Color(30, 30, 30, 255));
 
     if (!defaultManagerTexture.loadFromFile("images/managers/manager_default.png")) {
         if (!defaultManagerTexture.resize(sf::Vector2u(100, 100))) {
@@ -88,19 +89,19 @@ void DraftSession::loadResources() {
     }
     defaultManagerTexture.setSmooth(true);
 
-    statsBackground.setSize(sf::Vector2f(250.f, 80.f));
-    statsBackground.setFillColor(sf::Color(0, 0, 0, 150));
+    statsBackground.setSize(sf::Vector2f(250.f, 70.f));
+    statsBackground.setFillColor(sf::Color(0, 0, 0, 180));
     statsBackground.setOutlineColor(sf::Color::White);
-    statsBackground.setOutlineThickness(2);
-    statsBackground.setPosition({1010.f, 20.f});
+    statsBackground.setOutlineThickness(1);
+    statsBackground.setPosition({1060.f, 20.f});
 
-    ratingDisplay.setCharacterSize(20);
+    ratingDisplay.setCharacterSize(18);
     ratingDisplay.setFillColor(sf::Color::Yellow);
-    ratingDisplay.setPosition({1030.f, 30.f});
+    ratingDisplay.setPosition({1070.f, 25.f});
 
-    chemistryDisplay.setCharacterSize(20);
+    chemistryDisplay.setCharacterSize(18);
     chemistryDisplay.setFillColor(sf::Color::Cyan);
-    chemistryDisplay.setPosition({1030.f, 60.f});
+    chemistryDisplay.setPosition({1070.f, 50.f});
 
     updateStatsUI();
 }
@@ -125,7 +126,8 @@ void DraftSession::generateManagerOptions() {
     float cardW = 140.0f; float cardH = 200.0f; float gap = 20.0f;
 
     float totalW = (static_cast<float>(count) * cardW) + (static_cast<float>(count - 1) * gap);
-    float startX = 250.0f + (1030.0f - totalW) / 2.0f;
+
+    float startX = 765.0f - (totalW / 2.0f);
     float startY = 260.0f;
 
     for (int i = 0; i < count; ++i) {
@@ -136,13 +138,11 @@ void DraftSession::generateManagerOptions() {
         card.isManager = true;
 
         card.shape.setSize({cardW, cardH});
-        card.shape.setFillColor(sf::Color(30, 40, 70, 220));
+        card.shape.setFillColor(sf::Color(30, 40, 70, 240));
         card.shape.setOutlineColor(sf::Color(255, 215, 0));
-        card.shape.setOutlineThickness(2);
+        card.shape.setOutlineThickness(3);
+        card.shape.setPosition({startX + i * (cardW + gap), startY});
 
-
-        float posX = startX + static_cast<float>(i) * (cardW + gap);
-        card.shape.setPosition({posX, startY});
 
         bool loadSuccess = card.texture.loadFromFile(card.manager.getImagePath());
 
@@ -160,8 +160,11 @@ void DraftSession::generateManagerOptions() {
             float scaleY = (cardH - 50.0f) / bounds.size.y;
             float scale = min(scaleX, scaleY);
             card.sprite.setScale({scale, scale});
-            float spriteW = bounds.size.x * scale;
-            card.sprite.setPosition({card.shape.getPosition().x + (cardW - spriteW) / 2.0f, startY + 10.0f});
+
+            card.sprite.setPosition({
+                card.shape.getPosition().x + (cardW - bounds.size.x * scale) / 2.0f,
+                card.shape.getPosition().y + 10.0f
+            });
         }
 
 
@@ -219,7 +222,8 @@ void DraftSession::generateOptions() {
 
     float cardW = 140.0f; float cardH = 200.0f; float gap = 20.0f;
     float totalW = (static_cast<float>(count) * cardW) + (static_cast<float>(count - 1) * gap);
-    float startX = 250.0f + (1030.0f - totalW) / 2.0f;
+
+    float startX = 765.0f - (totalW / 2.0f);
     float startY = 260.0f;
 
     currentOptions.reserve(count);
@@ -232,12 +236,11 @@ void DraftSession::generateOptions() {
         Player& pRef = *card.playerPtr;
 
         card.shape.setSize({cardW, cardH});
-        card.shape.setFillColor(sf::Color(40, 40, 40, 200));
+        card.shape.setFillColor(sf::Color(40, 40, 40, 240));
         card.shape.setOutlineColor(sf::Color::White);
         card.shape.setOutlineThickness(2);
 
-        float posX = startX + static_cast<float>(i) * (cardW + gap);
-        card.shape.setPosition({posX, startY});
+        card.shape.setPosition({startX + i * (cardW + gap), startY});
 
         bool loadSuccess = false;
         if (!pRef.getImagePath().empty()) {
@@ -258,23 +261,20 @@ void DraftSession::generateOptions() {
             float scale = min(scaleX, scaleY);
             card.sprite.setScale({scale, scale});
 
-            float spriteW = bounds.size.x * scale;
-            card.sprite.setPosition({posX + (cardW - spriteW) / 2.0f, startY + 10.0f});
+            card.sprite.setPosition({
+                card.shape.getPosition().x + (cardW - bounds.size.x * scale) / 2.0f,
+                card.shape.getPosition().y + 10.0f
+            });
         }
 
         card.nameText.setString(pRef.getName());
         card.nameText.setCharacterSize(14);
-        card.nameText.setFillColor(sf::Color::White);
         sf::FloatRect textRect = card.nameText.getLocalBounds();
         card.nameText.setOrigin({textRect.size.x/2.0f, 0.0f});
-        card.nameText.setPosition({posX + cardW/2.0f, startY + cardH - 25.0f});
+        card.nameText.setPosition({card.shape.getPosition().x + cardW/2.0f, startY + cardH - 25.0f});
 
         card.ratingText.setString(to_string(pRef.getRating()));
-        card.ratingText.setCharacterSize(18);
-        card.ratingText.setFillColor(sf::Color::Yellow);
-        card.ratingText.setOutlineColor(sf::Color::Black);
-        card.ratingText.setOutlineThickness(1);
-        card.ratingText.setPosition({posX + 5.0f, startY + 5.0f});
+        card.ratingText.setPosition({card.shape.getPosition().x + 5.0f, startY + 5.0f});
     }
 }
 
@@ -294,14 +294,21 @@ void DraftSession::selectPlayer(int index) {
         SelectedVisual& sv = sidebarVisuals.back();
         sv.sprite.setTexture(sv.texture, true);
 
-        float sidebarY = 60.0f + 11.0f * 50.0f + 10.0f;
+        float sidebarCenterX = 125.0f;
+        float mY = 120.0f;
 
-        sv.sprite.setScale({0.15f, 0.15f});
-        sv.sprite.setPosition({20.0f, sidebarY});
+        sv.sprite.setScale({0.2f, 0.2f});
+        sf::FloatRect b = sv.sprite.getLocalBounds();
+        sv.sprite.setOrigin({b.size.x/2, b.size.y/2});
+        sv.sprite.setPosition({sidebarCenterX, mY});
 
         sv.info.setString("Manager\n" + choice.manager.getNationality());
+        sv.info.setCharacterSize(16);
         sv.info.setFillColor(sf::Color::Cyan);
-        sv.info.setPosition({80.0f, sidebarY + 5.0f});
+
+        sf::FloatRect tr = sv.info.getLocalBounds();
+        sv.info.setOrigin({tr.size.x/2, 0});
+        sv.info.setPosition({sidebarCenterX, mY + 60.0f});
 
         updateStatsUI();
         draftCompleted = true;
@@ -327,15 +334,18 @@ void DraftSession::selectPlayer(int index) {
         SelectedVisual& sv = sidebarVisuals.back();
         sv.sprite.setTexture(sv.texture, true);
 
-        float sidebarY = 60.0f + static_cast<float>(currentPositionIndex) * 50.0f;
+        sf::Vector2f pitchPos = formation.getCoordinates()[currentPositionIndex];
 
-        sv.sprite.setScale({0.15f, 0.15f});
-        sv.sprite.setPosition({20.0f, sidebarY});
+        sv.sprite.setScale({0.44f, 0.44f});
+
+        sf::FloatRect bounds = sv.sprite.getLocalBounds();
+        sv.sprite.setOrigin({bounds.size.x / 2.0f, bounds.size.y / 2.0f});
+        sv.sprite.setPosition(pitchPos);
 
         sv.info.setString(posLabel + "\n" + to_string(rating));
-        sv.info.setCharacterSize(14);
-        sv.info.setFillColor(sf::Color::White);
-        sv.info.setPosition({80.0f, sidebarY + 5.0f});
+        sv.info.setCharacterSize(12);
+        sv.info.setOutlineColor(sf::Color::Black);
+        sv.info.setOutlineThickness(1);
     }
 
     updateStatsUI();
@@ -351,7 +361,7 @@ void DraftSession::updateStatsUI() {
     chemistryDisplay.setString("CHEMISTRY: " + to_string(chem));
 
     const auto& positions = formation.getPositions();
-
+    const auto& coords = formation.getCoordinates();
     for (size_t i = 0; i < sidebarVisuals.size(); ++i) {
         if (i < positions.size()) {
             string posLabel = positions[i];
@@ -361,11 +371,13 @@ void DraftSession::updateStatsUI() {
             if (pPtr) {
                 int indivChem = team.getPlayerChemistry(posLabel);
 
-
-                string infoText = posLabel + "     Ch: " + to_string(indivChem) + "\n" +
-                                  to_string(pPtr->getRating());
+                string infoText = posLabel + " " + to_string(pPtr->getRating()) + "\nCh: " + to_string(indivChem);
 
                 sidebarVisuals[i].info.setString(infoText);
+
+                sf::FloatRect tr = sidebarVisuals[i].info.getLocalBounds();
+                sidebarVisuals[i].info.setOrigin({tr.size.x / 2.0f, 0.0f});
+                sidebarVisuals[i].info.setPosition({coords[i].x, coords[i].y + 35.0f});
 
                 if (indivChem == 10) sidebarVisuals[i].info.setFillColor(sf::Color::Green);
                 else if (indivChem >= 7) sidebarVisuals[i].info.setFillColor(sf::Color::Yellow);
@@ -385,7 +397,7 @@ void DraftSession::handleInput() {
         else if (const auto* kp = event->getIf<sf::Event::KeyPressed>()) {
             if (kp->code == sf::Keyboard::Key::Escape) {
                 if (selectedSwapIndex != -1) {
-                    sidebarVisuals[selectedSwapIndex].sprite.setScale({0.15f, 0.15f});
+                    sidebarVisuals[selectedSwapIndex].sprite.setScale({0.44f, 0.44f});
                     sidebarVisuals[selectedSwapIndex].sprite.setColor(sf::Color::White);
                     selectedSwapIndex = -1;
                 } else {
@@ -398,24 +410,27 @@ void DraftSession::handleInput() {
                 sf::Vector2f mPos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
 
                 if (!draftCompleted) {
+                    bool clickedOption = false;
                     for (size_t i = 0; i < currentOptions.size(); ++i) {
                         if (currentOptions[i].shape.getGlobalBounds().contains(mPos)) {
                             selectPlayer(static_cast<int>(i));
+                            clickedOption = true;
                             break;
                         }
                     }
+                    if(clickedOption) continue;
                 }
 
                 for (size_t i = 0; i < sidebarVisuals.size(); ++i) {
                     if (sidebarVisuals[i].sprite.getGlobalBounds().contains(mPos)) {
                         if (selectedSwapIndex == -1) {
                             selectedSwapIndex = static_cast<int>(i);
-                            sidebarVisuals[i].sprite.setScale({0.18f, 0.18f});
+                            sidebarVisuals[i].sprite.setScale({0.48f, 0.48f});
                             sidebarVisuals[i].sprite.setColor(sf::Color(200, 255, 200));
                             cout << "Selectat pentru swap: Index " << i << "\n";
                         }
                         else if (selectedSwapIndex == static_cast<int>(i)) {
-                            sidebarVisuals[i].sprite.setScale({0.15f, 0.15f});
+                            sidebarVisuals[i].sprite.setScale({0.44f, 0.44f});
                             sidebarVisuals[i].sprite.setColor(sf::Color::White);
                             selectedSwapIndex = -1;
                             cout << "Deselectat.\n";
@@ -423,7 +438,6 @@ void DraftSession::handleInput() {
                         else {
                             try {
                                 size_t maxPlayers = formation.getPositions().size();
-
 
                                 if (static_cast<size_t>(selectedSwapIndex) >= maxPlayers || i >= maxPlayers) {
                                     throw InvalidOperationException("Nu poti schimba Managerul cu un jucator!");
@@ -434,25 +448,14 @@ void DraftSession::handleInput() {
 
                                 cout << "Incercare Swap: " << pos1 << " <-> " << pos2 << "\n";
 
-
                                 team.swapPlayers(pos1, pos2);
-
-
                                 std::swap(sidebarVisuals[selectedSwapIndex], sidebarVisuals[i]);
-
 
                                 sidebarVisuals[selectedSwapIndex].sprite.setTexture(sidebarVisuals[selectedSwapIndex].texture);
                                 sidebarVisuals[i].sprite.setTexture(sidebarVisuals[i].texture);
 
-
-                                float sidebarY_Select = 60.0f + static_cast<float>(selectedSwapIndex) * 50.0f;
-                                float sidebarY_Target = 60.0f + static_cast<float>(i) * 50.0f;
-
-                                sidebarVisuals[selectedSwapIndex].sprite.setPosition({20.0f, sidebarY_Select});
-                                sidebarVisuals[selectedSwapIndex].info.setPosition({80.0f, sidebarY_Select + 5.0f});
-
-                                sidebarVisuals[i].sprite.setPosition({20.0f, sidebarY_Target});
-                                sidebarVisuals[i].info.setPosition({80.0f, sidebarY_Target + 5.0f});
+                                sidebarVisuals[selectedSwapIndex].sprite.setPosition(formation.getCoordinates()[selectedSwapIndex]);
+                                sidebarVisuals[i].sprite.setPosition(formation.getCoordinates()[i]);
 
                                 updateStatsUI();
                                 cout << "Swap reusit!\n";
@@ -462,8 +465,11 @@ void DraftSession::handleInput() {
                             }
 
                             for(auto& sv : sidebarVisuals) {
-                                sv.sprite.setScale({0.15f, 0.15f});
+                                sv.sprite.setScale({0.44f, 0.44f});
                                 sv.sprite.setColor(sf::Color::White);
+                            }
+                            if (!sidebarVisuals.empty() && sidebarVisuals.size() > formation.getPositions().size()) {
+                                sidebarVisuals.back().sprite.setScale({0.2f, 0.2f});
                             }
                             selectedSwapIndex = -1;
                         }
@@ -486,10 +492,6 @@ void DraftSession::draw() {
 
     window.draw(backgroundSprite);
     window.draw(sidebar);
-
-    sf::Text title(font, "Echipa Ta", 24);
-    title.setPosition({20.0f, 20.0f});
-    window.draw(title);
 
     for (const auto& item : sidebarVisuals) {
         window.draw(item.sprite);
@@ -514,16 +516,24 @@ void DraftSession::draw() {
         }
 
         sf::Text pickText(font, titleText, 30);
-        pickText.setFillColor(sf::Color::White);
+
         pickText.setOutlineColor(sf::Color::Black);
         pickText.setOutlineThickness(2);
+
         sf::FloatRect tr = pickText.getLocalBounds();
         pickText.setOrigin({tr.size.x/2.0f, 0.0f});
-        pickText.setPosition({765.0f, 200.0f});
+        pickText.setPosition({765.0f, 50.0f});
         window.draw(pickText);
 
         sf::Vector2f mPos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
         bool showPreview = false;
+
+        if (!currentOptions.empty()) {
+            sf::RectangleShape overlayBar({1280.0f, 250.0f});
+            overlayBar.setFillColor(sf::Color(0,0,0,150));
+            overlayBar.setPosition({0.0f, 240.0f});
+            window.draw(overlayBar);
+        }
 
         for (auto& opt : currentOptions) {
             if (opt.shape.getGlobalBounds().contains(mPos)) {
@@ -543,7 +553,7 @@ void DraftSession::draw() {
 
                     sf::FloatRect bounds = previewSprite.getLocalBounds();
                     previewSprite.setOrigin({bounds.size.x/2.0f, bounds.size.y/2.0f});
-                    previewSprite.setPosition({640.0f, 360.0f});
+                    previewSprite.setPosition({765.0f, 360.0f});
 
                     if (textureToShow.getSize().x < 200) {
                         previewSprite.setScale({3.0f, 3.0f});
@@ -568,11 +578,14 @@ void DraftSession::draw() {
             window.draw(previewSprite);
         }
     } else {
-        sf::Text doneText(font, "ECHIPA COMPLETA!", 50);
+        sf::Text doneText(font, "ECHIPA COMPLETA", 30);
         doneText.setFillColor(sf::Color::Green);
+        doneText.setOutlineColor(sf::Color::Black);
+        doneText.setOutlineThickness(2);
+
         sf::FloatRect dBounds = doneText.getLocalBounds();
-        doneText.setOrigin({dBounds.size.x/2.0f, dBounds.size.y/2.0f});
-        doneText.setPosition({765.0f, 300.0f});
+        doneText.setOrigin({dBounds.size.x, dBounds.size.y});
+        doneText.setPosition({1260.0f, 700.0f});
         window.draw(doneText);
     }
 
