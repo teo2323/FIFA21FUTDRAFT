@@ -101,15 +101,13 @@ Player* Team::getPlayerOnPosition(const std::string& pos) const {
     return nullptr;
 }
 
-// ... (codul de sus ramane la fel)
-
 void Team::swapPlayers(const string& pos1, const string& pos2) {
 
     if (!players.contains(pos1) || !players.contains(pos2)) {
         throw InvalidOperationException("Nu se poate face swap: Unul dintre sloturi este gol!");
     }
 
-    // Obtinem pointerii raw pentru verificare
+    
     const Player* p1 = players[pos1].get();
     const Player* p2 = players[pos2].get();
 
