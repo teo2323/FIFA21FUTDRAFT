@@ -101,26 +101,28 @@ Player* Team::getPlayerOnPosition(const std::string& pos) const {
     return nullptr;
 }
 
+// ... (codul de sus ramane la fel)
+
 void Team::swapPlayers(const string& pos1, const string& pos2) {
 
     if (!players.contains(pos1) || !players.contains(pos2)) {
         throw InvalidOperationException("Nu se poate face swap: Unul dintre sloturi este gol!");
     }
 
+    // Obtinem pointerii raw pentru verificare
+    const Player* p1 = players[pos1].get();
+    const Player* p2 = players[pos2].get();
 
-   const Player* p1 = players[pos1].get();
-   const  Player* p2 = players[pos2].get();
+    auto* gk1 = dynamic_cast<const Goalkeeper*>(p1);
+    auto* gk2 = dynamic_cast<const Goalkeeper*>(p2);
 
-
-
-
-    if (p1->getRole() == "Goalkeeper" && pos2 != "GK") {
-        throw InvalidOperationException("Portarii nu pot juca pe pozitii din teren!");
-    }
-    if (p2->getRole() == "Goalkeeper" && pos1 != "GK") {
+    if (gk1 && pos2 != "GK") {
         throw InvalidOperationException("Portarii nu pot juca pe pozitii din teren!");
     }
 
+    if (gk2 && pos1 != "GK") {
+        throw InvalidOperationException("Portarii nu pot juca pe pozitii din teren!");
+    }
 
     std::swap(players[pos1], players[pos2]);
 }
