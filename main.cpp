@@ -7,7 +7,7 @@
 #include "Formation.h"
 #include "Testers.h"
 #include "Exception.h"
-
+//sincer sa fiu mi-a cam dat dauna totala merge-ul cu README-ul pe care il updatasem din github direct
 struct MenuButton {
     sf::RectangleShape shape;
     sf::Text label;
