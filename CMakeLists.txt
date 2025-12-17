@@ -73,6 +73,8 @@ add_executable(${MAIN_EXECUTABLE_NAME}
         Testers.cpp
         Testers.h
         Exception.h
+        ChemistryLink.cpp
+        ChemistryLink.h
 )
 
 # NOTE: Add all defined targets (e.g. executables, libraries, etc. )

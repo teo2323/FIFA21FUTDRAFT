@@ -47,6 +47,55 @@ DraftSession::DraftSession(sf::RenderWindow& win, const Formation& f)
     generateOptions();
 }
 
+void DraftSession::updateLinksVisuals() {
+    linkLines.clear();
+
+    const auto& links = formation.getLinks();
+    const auto& coords = formation.getCoordinates();
+    const auto& positions = formation.getPositions();
+
+    auto getIndex = [&](const string& posName) -> int {
+        for (size_t i = 0; i < positions.size(); ++i) {
+            if (positions[i] == posName) return static_cast<int>(i);
+        }
+        return -1;
+    };
+
+    for (const auto& link : links) {
+        int idx1 = getIndex(link.first);
+        int idx2 = getIndex(link.second);
+
+        if (idx1 != -1 && idx2 != -1) {
+            sf::Vector2f p1 = coords[idx1];
+            sf::Vector2f p2 = coords[idx2];
+
+            const Player* ptr1 = team.getPlayerOnPosition(link.first);
+            const Player* ptr2 = team.getPlayerOnPosition(link.second);
+
+            int linkValue = 0;
+            if (ptr1 && ptr2) {
+                linkValue = ptr1->calcLink(*ptr2);
+            }
+
+
+            switch (linkValue) {
+                case 3:
+                    linkLines.push_back(make_unique<GreenLink>(p1, p2));
+                    break;
+                case 2:
+                    linkLines.push_back(make_unique<YellowLink>(p1, p2));
+                    break;
+                case 1:
+                    linkLines.push_back(make_unique<OrangeLink>(p1, p2));
+                    break;
+                default:
+                    linkLines.push_back(make_unique<RedLink>(p1, p2));
+                    break;
+            }
+        }
+    }
+}
+
 void DraftSession::loadResources() {
     if (!font.openFromFile("arial.ttf")) {
         throw FileMissingException("arial.ttf");
@@ -359,6 +408,7 @@ void DraftSession::selectPlayer(int index) {
 }
 
 void DraftSession::updateStatsUI() {
+    updateLinksVisuals();
     int rating = static_cast<int>(team.computeRating());
     int chem = team.computeChemistry();
     int overall = static_cast<int>(team.computeOverall());
@@ -499,6 +549,10 @@ void DraftSession::draw() {
 
     window.draw(backgroundSprite);
     window.draw(sidebar);
+
+    for (const auto& link : linkLines) {
+        link->draw(window);
+    }
 
     for (const auto& item : sidebarVisuals) {
         window.draw(item.sprite);

@@ -6,7 +6,8 @@
 #include "Formation.h"
 #include "Team.h"
 #include "Database.h"
-
+#include "ChemistryLink.h"
+#include <memory>
 
 struct CardOption {
     sf::RectangleShape shape;
@@ -67,6 +68,7 @@ class DraftSession {
 
     sf::Sprite previewSprite;
     int selectedSwapIndex;
+    std::vector<std::unique_ptr<ChemistryLink>> linkLines;
 public:
     DraftSession(sf::RenderWindow& win, const Formation& f);
     ~DraftSession() = default;
@@ -80,4 +82,5 @@ private:
     void generateManagerOptions();
     void selectPlayer(int index);
     void updateStatsUI();
+    void updateLinksVisuals();
 };
