@@ -5,6 +5,7 @@
 #include <random>
 #include <iostream>
 #include "Exception.h"
+
 using namespace std;
 
 DraftSession::DraftSession(sf::RenderWindow& win, const Formation& f)
@@ -17,7 +18,6 @@ DraftSession::DraftSession(sf::RenderWindow& win, const Formation& f)
           {"LW","LW"},{"RW","RW"},{"ST","ST"},{"LST","ST"},{"RST","ST"},
           {"CB","CB"}
       },
-
       window(win),
       font(),
       backgroundTexture(),
@@ -36,10 +36,12 @@ DraftSession::DraftSession(sf::RenderWindow& win, const Formation& f)
       choosingManager(false),
       currentOptions(),
       sidebarVisuals(),
+      reserveVisuals(),
       previewSprite(dummyTexture),
       selectedSwapIndex(-1)
 {
     sidebarVisuals.reserve(12);
+    reserveVisuals.reserve(7);
     sf::Texture dummy;
     previewSprite.setTexture(dummy);
 
@@ -77,7 +79,6 @@ void DraftSession::updateLinksVisuals() {
                 linkValue = ptr1->calcLink(*ptr2);
             }
 
-
             switch (linkValue) {
                 case 3:
                     linkLines.push_back(make_unique<GreenLink>(p1, p2));
@@ -101,23 +102,21 @@ void DraftSession::loadResources() {
         throw FileMissingException("arial.ttf");
     }
 
-
     ratingDisplay.setFont(font);
     chemistryDisplay.setFont(font);
+    overallDisplay.setFont(font);
 
     db.loadAll();
 
     if (!defaultCardTexture.loadFromFile("images/players/card_default.png")) {
-        cerr << "Eroare: Nu am gasit images/players/card_default.png! Voi folosi un patrat alb.\n";
         if (!defaultCardTexture.resize(sf::Vector2u(100, 100))) {
-            cerr << "Critical: Nu am putut crea textura default (resize failed).\n";
+            cerr << "Critical: Resize failed.\n";
         }
     }
     defaultCardTexture.setSmooth(true);
 
     string path = "images/formations/" + formation.getName() + ".png";
     if (backgroundTexture.loadFromFile(path)) {
-
         backgroundTexture.setSmooth(true);
         backgroundSprite.setTexture(backgroundTexture, true);
 
@@ -134,7 +133,7 @@ void DraftSession::loadResources() {
 
     if (!defaultManagerTexture.loadFromFile("images/managers/manager_default.png")) {
         if (!defaultManagerTexture.resize(sf::Vector2u(100, 100))) {
-            cerr << "Critical: Nu am putut crea textura manager (resize failed).\n";
+            cerr << "Critical: Resize failed.\n";
         }
     }
     defaultManagerTexture.setSmooth(true);
@@ -162,25 +161,21 @@ void DraftSession::loadResources() {
 
 void DraftSession::generateManagerOptions() {
     currentOptions.clear();
-
     vector<Manager> candidates = db.getManagers();
 
     if (candidates.empty()) {
-        cerr << "ATENTIE: Nu s-au gasit manageri in baza de date (MANAGER.txt lipsa sau gol)!\n";
+        cerr << "ATENTIE: Nu s-au gasit manageri!\n";
     }
 
     static std::random_device rd;
     static std::mt19937 g(rd());
     std::shuffle(candidates.begin(), candidates.end(), g);
 
-
     int count = min(static_cast<int>(candidates.size()), 5);
     currentOptions.reserve(count);
 
     float cardW = 140.0f; float cardH = 200.0f; float gap = 20.0f;
-
     float totalW = (static_cast<float>(count) * cardW) + (static_cast<float>(count - 1) * gap);
-
     float startX = 765.0f - (totalW / 2.0f);
     float startY = 260.0f;
 
@@ -197,16 +192,12 @@ void DraftSession::generateManagerOptions() {
         card.shape.setOutlineThickness(3);
         card.shape.setPosition({startX + i * (cardW + gap), startY});
 
-
-        bool loadSuccess = card.texture.loadFromFile(card.manager.getImagePath());
-
-        if (loadSuccess) {
+        if (card.texture.loadFromFile(card.manager.getImagePath())) {
             card.texture.setSmooth(true);
             card.sprite.setTexture(card.texture, true);
         } else {
             card.sprite.setTexture(defaultManagerTexture, true);
         }
-
 
         sf::FloatRect bounds = card.sprite.getLocalBounds();
         if (bounds.size.x > 0) {
@@ -220,7 +211,6 @@ void DraftSession::generateManagerOptions() {
                 card.shape.getPosition().y + 10.0f
             });
         }
-
 
         card.nameText.setString(card.manager.getName());
         card.nameText.setCharacterSize(14);
@@ -236,116 +226,197 @@ void DraftSession::generateManagerOptions() {
 
 void DraftSession::generateOptions() {
     currentOptions.clear();
-
     const vector<string>& positions = formation.getPositions();
+    size_t totalStarters = positions.size();
+    size_t totalReserves = 7;
 
-    if (static_cast<size_t>(currentPositionIndex) >= positions.size()) {
+    if (static_cast<size_t>(currentPositionIndex) < totalStarters) {
+        string currentPos = positions[currentPositionIndex];
+        string dbGroup = positionMap[currentPos];
+
+        const auto& allCandidates = db.getPlayersByPosition(dbGroup);
+        vector<Player*> validCandidates;
+        validCandidates.reserve(allCandidates.size());
+
+        for (const auto& uPtr : allCandidates) {
+            if (!team.isPlayerInTeam(*uPtr)) {
+                validCandidates.push_back(uPtr.get());
+            }
+        }
+
+        static std::random_device rd;
+        static std::mt19937 g(rd());
+        std::shuffle(validCandidates.begin(), validCandidates.end(), g);
+
+        int count = min(static_cast<int>(validCandidates.size()), 5);
+
+        float cardW = 140.0f; float cardH = 200.0f; float gap = 20.0f;
+        float totalW = (static_cast<float>(count) * cardW) + (static_cast<float>(count - 1) * gap);
+        float startX = 765.0f - (totalW / 2.0f);
+        float startY = 260.0f;
+
+        currentOptions.reserve(count);
+
+        for (int i = 0; i < count; ++i) {
+            currentOptions.emplace_back(font, dummyTexture);
+            CardOption& card = currentOptions.back();
+            card.playerPtr = validCandidates[i]->clone();
+            Player& pRef = *card.playerPtr;
+
+            card.shape.setSize({cardW, cardH});
+            card.shape.setFillColor(sf::Color(40, 40, 40, 240));
+            card.shape.setOutlineColor(sf::Color::White);
+            card.shape.setOutlineThickness(2);
+            card.shape.setPosition({startX + i * (cardW + gap), startY});
+
+            if (!pRef.getImagePath().empty()) {
+                if (card.texture.loadFromFile(pRef.getImagePath())) {
+                    card.texture.setSmooth(true);
+                    card.sprite.setTexture(card.texture, true);
+                } else {
+                    card.sprite.setTexture(defaultCardTexture, true);
+                }
+            } else {
+                card.sprite.setTexture(defaultCardTexture, true);
+            }
+
+            sf::FloatRect bounds = card.sprite.getLocalBounds();
+            if (bounds.size.x > 0) {
+                float scaleX = (cardW - 10.0f) / bounds.size.x;
+                float scaleY = (cardH - 50.0f) / bounds.size.y;
+                float scale = min(scaleX, scaleY);
+                card.sprite.setScale({scale, scale});
+                card.sprite.setPosition({
+                    card.shape.getPosition().x + (cardW - bounds.size.x * scale) / 2.0f,
+                    card.shape.getPosition().y + 10.0f
+                });
+            }
+
+            card.nameText.setString(pRef.getName());
+            card.nameText.setCharacterSize(14);
+            sf::FloatRect tr = card.nameText.getLocalBounds();
+            card.nameText.setOrigin({tr.size.x/2.0f, 0.0f});
+            card.nameText.setPosition({card.shape.getPosition().x + cardW/2.0f, startY + cardH - 25.0f});
+
+            card.ratingText.setString(to_string(pRef.getRating()));
+            card.ratingText.setPosition({card.shape.getPosition().x + 5.0f, startY + 5.0f});
+        }
+    }
+    else if (static_cast<size_t>(currentPositionIndex) < totalStarters + totalReserves) {
+        int resIdx = currentPositionIndex - static_cast<int>(totalStarters);
+        string dbGroup;
+
+        static std::random_device rd;
+        static std::mt19937 g(rd());
+
+        if (resIdx == 0) {
+            dbGroup = "GK";
+        }
+        else if (resIdx == 1 || resIdx == 2) {
+            vector<string> defs = {"CB", "LB", "RB"};
+            uniform_int_distribution<> dist(0, 2);
+            dbGroup = defs[dist(g)];
+        }
+        else if (resIdx == 3 || resIdx == 4) {
+            vector<string> mids = {"CM", "LM", "RM"};
+            uniform_int_distribution<> dist(0, 2);
+            dbGroup = mids[dist(g)];
+        }
+        else {
+            vector<string> atts = {"ST", "LW", "RW"};
+            uniform_int_distribution<> dist(0, 2);
+            dbGroup = atts[dist(g)];
+        }
+
+        const auto& allCandidates = db.getPlayersByPosition(dbGroup);
+        vector<Player*> validCandidates;
+        validCandidates.reserve(allCandidates.size());
+
+        for (const auto& uPtr : allCandidates) {
+            if (!team.isPlayerInTeam(*uPtr)) {
+                validCandidates.push_back(uPtr.get());
+            }
+        }
+
+        std::shuffle(validCandidates.begin(), validCandidates.end(), g);
+
+        int count = min(static_cast<int>(validCandidates.size()), 5);
+
+        float cardW = 140.0f; float cardH = 200.0f; float gap = 20.0f;
+        float totalW = (static_cast<float>(count) * cardW) + (static_cast<float>(count - 1) * gap);
+        float startX = 765.0f - (totalW / 2.0f);
+        float startY = 260.0f;
+
+        currentOptions.reserve(count);
+
+        for (int i = 0; i < count; ++i) {
+            currentOptions.emplace_back(font, dummyTexture);
+            CardOption& card = currentOptions.back();
+            card.playerPtr = validCandidates[i]->clone();
+            Player& pRef = *card.playerPtr;
+
+            card.shape.setSize({cardW, cardH});
+            card.shape.setFillColor(sf::Color(50, 50, 70, 240));
+            card.shape.setOutlineColor(sf::Color::Cyan);
+            card.shape.setOutlineThickness(2);
+            card.shape.setPosition({startX + i * (cardW + gap), startY});
+
+            if (!pRef.getImagePath().empty()) {
+                if (card.texture.loadFromFile(pRef.getImagePath())) {
+                    card.texture.setSmooth(true);
+                    card.sprite.setTexture(card.texture, true);
+                } else {
+                    card.sprite.setTexture(defaultCardTexture, true);
+                }
+            } else {
+                card.sprite.setTexture(defaultCardTexture, true);
+            }
+
+            sf::FloatRect bounds = card.sprite.getLocalBounds();
+            if (bounds.size.x > 0) {
+                float scaleX = (cardW - 10.0f) / bounds.size.x;
+                float scaleY = (cardH - 50.0f) / bounds.size.y;
+                float scale = min(scaleX, scaleY);
+                card.sprite.setScale({scale, scale});
+                card.sprite.setPosition({
+                    card.shape.getPosition().x + (cardW - bounds.size.x * scale) / 2.0f,
+                    card.shape.getPosition().y + 10.0f
+                });
+            }
+
+            card.nameText.setString(pRef.getName());
+            card.nameText.setCharacterSize(14);
+            sf::FloatRect tr = card.nameText.getLocalBounds();
+            card.nameText.setOrigin({tr.size.x/2.0f, 0.0f});
+            card.nameText.setPosition({card.shape.getPosition().x + cardW/2.0f, startY + cardH - 25.0f});
+
+            card.ratingText.setString(to_string(pRef.getRating()));
+            card.ratingText.setPosition({card.shape.getPosition().x + 5.0f, startY + 5.0f});
+        }
+    }
+    else {
         if (!choosingManager) {
             choosingManager = true;
             generateManagerOptions();
-            return;
         } else {
             draftCompleted = true;
-            return;
         }
-    }
-
-    string currentPos = positions[currentPositionIndex];
-    string dbGroup = positionMap[currentPos];
-
-    const auto& allCandidates = db.getPlayersByPosition(dbGroup);
-
-
-    vector<Player*> validCandidates;
-    validCandidates.reserve(allCandidates.size());
-
-    for (const auto& uPtr : allCandidates) {
-
-        if (!team.isPlayerInTeam(*uPtr)) {
-            validCandidates.push_back(uPtr.get());
-        }
-    }
-
-
-    static std::random_device rd;
-    static std::mt19937 g(rd());
-    std::shuffle(validCandidates.begin(), validCandidates.end(), g);
-
-    int count = min(static_cast<int>(validCandidates.size()), 5);
-
-
-    float cardW = 140.0f; float cardH = 200.0f; float gap = 20.0f;
-    float totalW = (static_cast<float>(count) * cardW) + (static_cast<float>(count - 1) * gap);
-
-    float startX = 765.0f - (totalW / 2.0f);
-    float startY = 260.0f;
-
-    currentOptions.reserve(count);
-
-    for (int i = 0; i < count; ++i) {
-        currentOptions.emplace_back(font, dummyTexture);
-        CardOption& card = currentOptions.back();
-
-        card.playerPtr = validCandidates[i]->clone();
-        Player& pRef = *card.playerPtr;
-
-        card.shape.setSize({cardW, cardH});
-        card.shape.setFillColor(sf::Color(40, 40, 40, 240));
-        card.shape.setOutlineColor(sf::Color::White);
-        card.shape.setOutlineThickness(2);
-
-        card.shape.setPosition({startX + i * (cardW + gap), startY});
-
-        bool loadSuccess = false;
-        if (!pRef.getImagePath().empty()) {
-            loadSuccess = card.texture.loadFromFile(pRef.getImagePath());
-        }
-
-        if (loadSuccess) {
-            card.texture.setSmooth(true);
-            card.sprite.setTexture(card.texture, true);
-        } else {
-            card.sprite.setTexture(defaultCardTexture, true);
-        }
-
-        sf::FloatRect bounds = card.sprite.getLocalBounds();
-        if (bounds.size.x > 0 && bounds.size.y > 0) {
-            float scaleX = (cardW - 10.0f) / bounds.size.x;
-            float scaleY = (cardH - 50.0f) / bounds.size.y;
-            float scale = min(scaleX, scaleY);
-            card.sprite.setScale({scale, scale});
-
-            card.sprite.setPosition({
-                card.shape.getPosition().x + (cardW - bounds.size.x * scale) / 2.0f,
-                card.shape.getPosition().y + 10.0f
-            });
-        }
-
-        card.nameText.setString(pRef.getName());
-        card.nameText.setCharacterSize(14);
-        sf::FloatRect textRect = card.nameText.getLocalBounds();
-        card.nameText.setOrigin({textRect.size.x/2.0f, 0.0f});
-        card.nameText.setPosition({card.shape.getPosition().x + cardW/2.0f, startY + cardH - 25.0f});
-
-        card.ratingText.setString(to_string(pRef.getRating()));
-        card.ratingText.setPosition({card.shape.getPosition().x + 5.0f, startY + 5.0f});
     }
 }
 
 void DraftSession::selectPlayer(int index) {
-
     if (index < 0 || static_cast<size_t>(index) >= currentOptions.size()) return;
-
     CardOption& choice = currentOptions[index];
-
 
     if (choice.isManager) {
         team.setManager(choice.manager);
         cout << "Manager Ales: " << choice.manager.getName() << "\n";
 
         const sf::Texture& texToCopy = (choice.texture.getSize().x > 0) ? choice.texture : defaultManagerTexture;
-        sidebarVisuals.emplace_back(font, texToCopy);
-        SelectedVisual& sv = sidebarVisuals.back();
+
+        sidebarVisuals.push_back(make_unique<SelectedVisual>(font, texToCopy));
+        SelectedVisual& sv = *sidebarVisuals.back();
+
         sv.sprite.setTexture(sv.texture, true);
 
         float sidebarCenterX = 350.0f;
@@ -353,7 +424,7 @@ void DraftSession::selectPlayer(int index) {
 
         sv.sprite.setScale({0.9f, 0.9f});
         sf::FloatRect b = sv.sprite.getLocalBounds();
-        sv.sprite.setOrigin({b.size.x/2, b.size.y/2});
+        sv.sprite.setOrigin({b.size.x/2.0f, b.size.y/2.0f});
         sv.sprite.setPosition({sidebarCenterX, mY});
 
         sv.info.setString("Manager\n" + choice.manager.getNationality());
@@ -361,7 +432,7 @@ void DraftSession::selectPlayer(int index) {
         sv.info.setFillColor(sf::Color::Cyan);
 
         sf::FloatRect tr = sv.info.getLocalBounds();
-        sv.info.setOrigin({tr.size.x/2, 0});
+        sv.info.setOrigin({tr.size.x/2.0f, 0.0f});
         sv.info.setPosition({sidebarCenterX, mY + 100.0f});
 
         updateStatsUI();
@@ -371,35 +442,53 @@ void DraftSession::selectPlayer(int index) {
         return;
     }
 
-
-    string posLabel = formation.getPositions()[currentPositionIndex];
-
+    size_t totalStarters = formation.getPositions().size();
 
     if (choice.playerPtr) {
-        cout << "Ales: " << choice.playerPtr->getName() << "\n";
+        if (static_cast<size_t>(currentPositionIndex) < totalStarters) {
+            string posLabel = formation.getPositions()[currentPositionIndex];
+            team.addPlayer(posLabel, std::move(choice.playerPtr));
 
-        int rating = choice.playerPtr->getRating();
+            const sf::Texture& tx = (choice.texture.getSize().x > 0) ? choice.texture : defaultCardTexture;
 
-        team.addPlayer(posLabel, std::move(choice.playerPtr));
+            sidebarVisuals.push_back(make_unique<SelectedVisual>(font, tx));
+            SelectedVisual& sv = *sidebarVisuals.back();
+            sv.sprite.setTexture(sv.texture, true);
 
-        const sf::Texture& textureToCopy = (choice.texture.getSize().x > 0) ? choice.texture : defaultCardTexture;
-        sidebarVisuals.emplace_back(font, textureToCopy);
+            sf::Vector2f pitchPos = formation.getCoordinates()[currentPositionIndex];
+            sv.sprite.setScale({0.44f, 0.44f});
+            sf::FloatRect bounds = sv.sprite.getLocalBounds();
+            sv.sprite.setOrigin({bounds.size.x / 2.0f, bounds.size.y / 2.0f});
+            sv.sprite.setPosition(pitchPos);
 
-        SelectedVisual& sv = sidebarVisuals.back();
-        sv.sprite.setTexture(sv.texture, true);
+            sv.info.setString(posLabel);
+            sv.info.setCharacterSize(12);
+            sv.info.setOutlineColor(sf::Color::Black);
+            sv.info.setOutlineThickness(1);
+        }
+        else {
+            team.addReserve(std::move(choice.playerPtr));
 
-        sf::Vector2f pitchPos = formation.getCoordinates()[currentPositionIndex];
+            const sf::Texture& tx = (choice.texture.getSize().x > 0) ? choice.texture : defaultCardTexture;
 
-        sv.sprite.setScale({0.44f, 0.44f});
+            reserveVisuals.push_back(make_unique<SelectedVisual>(font, tx));
+            SelectedVisual& sv = *reserveVisuals.back();
+            sv.sprite.setTexture(sv.texture, true);
 
-        sf::FloatRect bounds = sv.sprite.getLocalBounds();
-        sv.sprite.setOrigin({bounds.size.x / 2.0f, bounds.size.y / 2.0f});
-        sv.sprite.setPosition(pitchPos);
+            int resIdx = currentPositionIndex - static_cast<int>(totalStarters);
+            float startY = 100.0f;
+            float gapY = 85.0f;
 
-        sv.info.setString(posLabel + "\n" + to_string(rating));
-        sv.info.setCharacterSize(12);
-        sv.info.setOutlineColor(sf::Color::Black);
-        sv.info.setOutlineThickness(1);
+            sv.sprite.setScale({0.30f, 0.30f});
+            sf::FloatRect bounds = sv.sprite.getLocalBounds();
+            sv.sprite.setOrigin({bounds.size.x / 2.0f, bounds.size.y / 2.0f});
+            sv.sprite.setPosition({125.0f, startY + resIdx * gapY});
+
+            sv.info.setString(" ");
+            sv.info.setCharacterSize(12);
+            sv.info.setFillColor(sf::Color::White);
+            sv.info.setPosition({170.0f, startY + resIdx * gapY - 10.0f});
+        }
     }
 
     updateStatsUI();
@@ -419,30 +508,149 @@ void DraftSession::updateStatsUI() {
 
     const auto& positions = formation.getPositions();
     const auto& coords = formation.getCoordinates();
+
     for (size_t i = 0; i < sidebarVisuals.size(); ++i) {
         if (i < positions.size()) {
             string posLabel = positions[i];
-
             const Player* pPtr = team.getPlayerOnPosition(posLabel);
 
             if (pPtr) {
                 int indivChem = team.getPlayerChemistry(posLabel);
+                string infoText = posLabel + " " + "\nCh: " + to_string(indivChem);
 
-                string infoText = posLabel + " " + to_string(pPtr->getRating()) + "\nCh: " + to_string(indivChem);
+                sidebarVisuals[i]->info.setString(infoText);
 
-                sidebarVisuals[i].info.setString(infoText);
+                sf::FloatRect tr = sidebarVisuals[i]->info.getLocalBounds();
+                sidebarVisuals[i]->info.setOrigin({tr.size.x / 2.0f, 0.0f});
+                sidebarVisuals[i]->info.setPosition({coords[i].x, coords[i].y + 70.0f});
 
-                sf::FloatRect tr = sidebarVisuals[i].info.getLocalBounds();
-                sidebarVisuals[i].info.setOrigin({tr.size.x / 2.0f, 0.0f});
-                sidebarVisuals[i].info.setPosition({coords[i].x, coords[i].y + 35.0f});
-
-                if (indivChem == 10) sidebarVisuals[i].info.setFillColor(sf::Color::Green);
-                else if (indivChem >= 7) sidebarVisuals[i].info.setFillColor(sf::Color::Yellow);
-                else if (indivChem >= 4) sidebarVisuals[i].info.setFillColor(sf::Color(255, 165, 0)); // Orange
-                else sidebarVisuals[i].info.setFillColor(sf::Color::Red);
+                if (indivChem == 10) sidebarVisuals[i]->info.setFillColor(sf::Color::Green);
+                else if (indivChem >= 7) sidebarVisuals[i]->info.setFillColor(sf::Color::Yellow);
+                else if (indivChem >= 4) sidebarVisuals[i]->info.setFillColor(sf::Color(255, 165, 0));
+                else sidebarVisuals[i]->info.setFillColor(sf::Color::Red);
             }
         }
     }
+
+    for (size_t i=0; i < reserveVisuals.size(); ++i) {
+        const Player* res = team.getReserve(static_cast<int>(i));
+        if (res) {
+            reserveVisuals[i]->info.setString("");
+        }
+    }
+}
+
+
+void DraftSession::handleSwapSelection(int index, bool isReserve) {
+
+    int encodedIndex = isReserve ? (100 + index) : index;
+
+
+    if (selectedSwapIndex == -1) {
+        selectedSwapIndex = encodedIndex;
+        if (isReserve) {
+            reserveVisuals[index]->sprite.setColor(sf::Color::Green);
+            reserveVisuals[index]->sprite.setScale({0.35f, 0.35f});
+        } else {
+            sidebarVisuals[index]->sprite.setColor(sf::Color::Green);
+            sidebarVisuals[index]->sprite.setScale({0.48f, 0.48f});
+        }
+        return;
+    }
+
+    if (selectedSwapIndex == encodedIndex) {
+
+        if (isReserve) {
+            reserveVisuals[index]->sprite.setColor(sf::Color::White);
+            reserveVisuals[index]->sprite.setScale({0.30f, 0.30f});
+        } else {
+            sidebarVisuals[index]->sprite.setColor(sf::Color::White);
+            sidebarVisuals[index]->sprite.setScale({0.44f, 0.44f});
+        }
+        selectedSwapIndex = -1;
+        return;
+    }
+
+    try {
+        bool firstIsReserve = (selectedSwapIndex >= 100);
+        int idx1 = firstIsReserve ? (selectedSwapIndex - 100) : selectedSwapIndex;
+        int idx2 = index;
+
+        if (!firstIsReserve && !isReserve) {
+            string pos1 = formation.getPositions()[idx1];
+            string pos2 = formation.getPositions()[idx2];
+
+
+            team.swapPlayers(pos1, pos2);
+
+            std::swap(sidebarVisuals[idx1], sidebarVisuals[idx2]);
+
+            sidebarVisuals[idx1]->sprite.setPosition(formation.getCoordinates()[idx1]);
+            sidebarVisuals[idx2]->sprite.setPosition(formation.getCoordinates()[idx2]);
+        }
+
+        else if (!firstIsReserve && isReserve) {
+
+            string pos = formation.getPositions()[idx1];
+
+            team.swapStarterWithReserve(pos, idx2);
+
+
+            std::swap(sidebarVisuals[idx1], reserveVisuals[idx2]);
+
+            sidebarVisuals[idx1]->sprite.setPosition(formation.getCoordinates()[idx1]);
+
+
+            float startY = 100.0f; float gapY = 85.0f;
+            reserveVisuals[idx2]->sprite.setPosition({125.0f, startY + idx2 * gapY});
+        }
+
+        else if (firstIsReserve && !isReserve) {
+
+            string pos = formation.getPositions()[idx2];
+
+            team.swapStarterWithReserve(pos, idx1);
+
+            std::swap(reserveVisuals[idx1], sidebarVisuals[idx2]);
+
+
+            sidebarVisuals[idx2]->sprite.setPosition(formation.getCoordinates()[idx2]);
+
+            float startY = 100.0f; float gapY = 85.0f;
+            reserveVisuals[idx1]->sprite.setPosition({125.0f, startY + idx1 * gapY});
+        }
+
+        else {
+            team.swapReserves(idx1, idx2);
+
+            std::swap(reserveVisuals[idx1], reserveVisuals[idx2]);
+
+            float startY = 100.0f; float gapY = 85.0f;
+            reserveVisuals[idx1]->sprite.setPosition({125.0f, startY + idx1 * gapY});
+            reserveVisuals[idx2]->sprite.setPosition({125.0f, startY + idx2 * gapY});
+        }
+
+        updateStatsUI();
+
+    } catch (const GameException& e) {
+        cerr << "SWAP BLOCAT: " << e.what() << endl;
+    }
+
+    for (size_t k = 0; k < sidebarVisuals.size(); ++k) {
+        if (k >= formation.getPositions().size()) {
+            sidebarVisuals[k]->sprite.setScale({0.9f, 0.9f});
+        } else {
+            sidebarVisuals[k]->sprite.setScale({0.44f, 0.44f});
+        }
+        sidebarVisuals[k]->sprite.setColor(sf::Color::White);
+    }
+
+    for (auto& rv : reserveVisuals) {
+        rv->sprite.setScale({0.30f, 0.30f});
+        rv->sprite.setColor(sf::Color::White);
+    }
+
+    selectedSwapIndex = -1;
 }
 
 void DraftSession::handleInput() {
@@ -454,8 +662,19 @@ void DraftSession::handleInput() {
         else if (const auto* kp = event->getIf<sf::Event::KeyPressed>()) {
             if (kp->code == sf::Keyboard::Key::Escape) {
                 if (selectedSwapIndex != -1) {
-                    sidebarVisuals[selectedSwapIndex].sprite.setScale({0.44f, 0.44f});
-                    sidebarVisuals[selectedSwapIndex].sprite.setColor(sf::Color::White);
+                    bool isRes = (selectedSwapIndex >= 100);
+                    int idx = isRes ? (selectedSwapIndex - 100) : selectedSwapIndex;
+
+                    if (isRes) {
+                        reserveVisuals[idx]->sprite.setScale({0.30f, 0.30f});
+                        reserveVisuals[idx]->sprite.setColor(sf::Color::White);
+                    } else {
+                        if (static_cast<size_t>(idx) >= formation.getPositions().size())
+                             sidebarVisuals[idx]->sprite.setScale({0.9f, 0.9f});
+                        else sidebarVisuals[idx]->sprite.setScale({0.44f, 0.44f});
+
+                        sidebarVisuals[idx]->sprite.setColor(sf::Color::White);
+                    }
                     selectedSwapIndex = -1;
                 } else {
                     isDrafting = false;
@@ -475,63 +694,24 @@ void DraftSession::handleInput() {
                             break;
                         }
                     }
-                    if(clickedOption) continue;
+                    if (clickedOption) continue;
                 }
 
                 for (size_t i = 0; i < sidebarVisuals.size(); ++i) {
-                    if (sidebarVisuals[i].sprite.getGlobalBounds().contains(mPos)) {
-                        if (selectedSwapIndex == -1) {
-                            selectedSwapIndex = static_cast<int>(i);
-                            sidebarVisuals[i].sprite.setScale({0.48f, 0.48f});
-                            sidebarVisuals[i].sprite.setColor(sf::Color(200, 255, 200));
-                            cout << "Selectat pentru swap: Index " << i << "\n";
-                        }
-                        else if (selectedSwapIndex == static_cast<int>(i)) {
-                            sidebarVisuals[i].sprite.setScale({0.44f, 0.44f});
-                            sidebarVisuals[i].sprite.setColor(sf::Color::White);
-                            selectedSwapIndex = -1;
-                            cout << "Deselectat.\n";
-                        }
-                        else {
-                            try {
-                                size_t maxPlayers = formation.getPositions().size();
+                    if (i >= formation.getPositions().size()) continue;
 
-                                if (static_cast<size_t>(selectedSwapIndex) >= maxPlayers || i >= maxPlayers) {
-                                    throw InvalidOperationException("Nu poti schimba Managerul cu un jucator!");
-                                }
-
-                                string pos1 = formation.getPositions()[selectedSwapIndex];
-                                string pos2 = formation.getPositions()[i];
-
-                                cout << "Incercare Swap: " << pos1 << " <-> " << pos2 << "\n";
-
-                                team.swapPlayers(pos1, pos2);
-                                std::swap(sidebarVisuals[selectedSwapIndex], sidebarVisuals[i]);
-
-                                sidebarVisuals[selectedSwapIndex].sprite.setTexture(sidebarVisuals[selectedSwapIndex].texture);
-                                sidebarVisuals[i].sprite.setTexture(sidebarVisuals[i].texture);
-
-                                sidebarVisuals[selectedSwapIndex].sprite.setPosition(formation.getCoordinates()[selectedSwapIndex]);
-                                sidebarVisuals[i].sprite.setPosition(formation.getCoordinates()[i]);
-
-                                updateStatsUI();
-                                cout << "Swap reusit!\n";
-
-                            } catch (const InvalidOperationException& e) {
-                                cerr << "SWAP ERROR: " << e.what() << "\n";
-                            }
-
-                            for(auto& sv : sidebarVisuals) {
-                                sv.sprite.setScale({0.44f, 0.44f});
-                                sv.sprite.setColor(sf::Color::White);
-                            }
-                            if (!sidebarVisuals.empty() && sidebarVisuals.size() > formation.getPositions().size()) {
-                                sidebarVisuals.back().sprite.setScale({0.2f, 0.2f});
-                            }
-                            selectedSwapIndex = -1;
-                        }
+                    if (sidebarVisuals[i]->sprite.getGlobalBounds().contains(mPos)) {
+                        handleSwapSelection(static_cast<int>(i), false);
+                        goto end_click;
                     }
                 }
+                for (size_t i = 0; i < reserveVisuals.size(); ++i) {
+                    if (reserveVisuals[i]->sprite.getGlobalBounds().contains(mPos)) {
+                        handleSwapSelection(static_cast<int>(i), true);
+                        goto end_click;
+                    }
+                }
+                end_click:;
             }
         }
     }
@@ -546,7 +726,6 @@ void DraftSession::run() {
 
 void DraftSession::draw() {
     window.clear(sf::Color(20, 20, 20));
-
     window.draw(backgroundSprite);
     window.draw(sidebar);
 
@@ -555,8 +734,12 @@ void DraftSession::draw() {
     }
 
     for (const auto& item : sidebarVisuals) {
-        window.draw(item.sprite);
-        window.draw(item.info);
+        window.draw(item->sprite);
+        window.draw(item->info);
+    }
+    for (const auto& item : reserveVisuals) {
+        window.draw(item->sprite);
+        window.draw(item->info);
     }
 
     window.draw(statsBackground);
@@ -572,7 +755,7 @@ void DraftSession::draw() {
             if (static_cast<size_t>(currentPositionIndex) < formation.getPositions().size()) {
                 titleText = "Alege: " + formation.getPositions()[currentPositionIndex];
             } else {
-                titleText = "Finalizare...";
+                titleText = "Alege rezerva";
             }
         }
 

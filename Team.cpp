@@ -4,11 +4,16 @@
 #include "Exception.h"
 using namespace std;
 
-Team::Team(const Formation& f) : formation(f) {}
+Team::Team(const Formation& f) : formation(f) {
+    reserves.reserve(7);
+}
 
 Team::Team(const Team& other) : formation(other.formation), manager(other.manager) {
     for (const auto& pair : other.players) {
         players[pair.first] = pair.second->clone();
+    }
+    for (const auto& res : other.reserves) {
+        reserves.push_back(res->clone());
     }
 }
 void swap(Team& first, Team& second) noexcept {
@@ -16,6 +21,7 @@ void swap(Team& first, Team& second) noexcept {
     swap(first.formation, second.formation);
     swap(first.manager, second.manager);
     swap(first.players, second.players);
+    swap(first.reserves, second.reserves);
 }
 
 Team& Team::operator=(Team other) {
@@ -26,16 +32,31 @@ Team& Team::operator=(Team other) {
 void Team::addPlayer(const string& pos, unique_ptr<Player> p) {
     players[pos] = std::move(p);
 }
+void Team::addReserve(unique_ptr<Player> p) {
+    if (reserves.size() < 7) {
+        reserves.push_back(std::move(p));
+    }
+}
 void Team::setManager(const Manager& m) { manager = m; }
 bool Team::positionTaken(const string& pos) const { return players.contains(pos); }
 
 double Team::computeRating() const {
-    int sum = 0;
-    if (players.empty()) return 0.0;
+    double sum = 0;
+    int count = 0;
+
+
     for (const auto& pair : players) {
         sum += pair.second->getRating();
+        count++;
     }
-    return sum / static_cast<double>(players.size());
+
+    for (const auto& res : reserves) {
+        sum += res->getRating();
+        count++;
+    }
+
+    if (count == 0) return 0.0;
+    return sum / static_cast<double>(count);
 }
 
 
@@ -90,6 +111,9 @@ bool Team::isPlayerInTeam(const Player& p) const {
     for (const auto& pair : players) {
         if (pair.second->getName() == p.getName()) return true;
     }
+    for (const auto& res : reserves) {
+        if (res->getName() == p.getName()) return true;
+    }
     return false;
 }
 
@@ -98,6 +122,10 @@ Player* Team::getPlayerOnPosition(const std::string& pos) const {
     if (it != players.end()) {
         return it->second.get();
     }
+    return nullptr;
+}
+Player* Team::getReserve(int index) const {
+    if (index >= 0 && index < reserves.size()) return reserves[index].get();
     return nullptr;
 }
 
@@ -123,6 +151,34 @@ void Team::swapPlayers(const string& pos1, const string& pos2) {
     }
 
     std::swap(players[pos1], players[pos2]);
+}
+
+void Team::swapReserves(int index1, int index2) {
+    if (index1 < 0 || index1 >= reserves.size() || index2 < 0 || index2 >= reserves.size()) {
+        throw InvalidOperationException("Index rezerva invalid!");
+    }
+    if (index1 == index2) return;
+
+    std::swap(reserves[index1], reserves[index2]);
+}
+
+void Team::swapStarterWithReserve(const std::string& starterPos, int reserveIdx) {
+    if (!players.contains(starterPos)) throw InvalidOperationException("Slot titular gol!");
+    if (reserveIdx < 0 || reserveIdx >= reserves.size()) throw InvalidOperationException("Index rezerva invalid!");
+
+    const Player* resPlayer = reserves[reserveIdx].get();
+
+    auto* resGK = dynamic_cast<const Goalkeeper*>(resPlayer);
+
+    if (resGK && starterPos != "GK") {
+        throw InvalidOperationException("Portarul de rezerva poate intra doar in poarta!");
+    }
+
+    if (starterPos == "GK" && !resGK) {
+        throw InvalidOperationException("In poarta poate intra doar un portar!");
+    }
+
+    std::swap(players[starterPos], reserves[reserveIdx]);
 }
 
 ostream& operator<<(ostream& os, const Team& t) {

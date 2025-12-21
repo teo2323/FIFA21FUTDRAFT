@@ -1,6 +1,6 @@
 Alexander_Arnold England PremierLeague Liverpool RB Defender 94
 Daniel_Carvajal Spain LaLiga Real_Madrid RB Defender 86
 Juan_Cuadrado Ecuador SerieA Juventus RB Defender 84
-Kenny_Lala Freance Ligue1 Strasbourg RB Defender 79
+Kenny_Lala France Ligue1 Strasbourg RB Defender 79
 Nordi_Mukiele France Bundesliga RB_Leipzig RB Defender 90
 Vali_Cretu Romania Superliga Steaua_Bucuresti RB Defender 70

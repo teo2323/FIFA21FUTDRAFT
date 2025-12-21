@@ -64,7 +64,9 @@ class DraftSession {
     bool draftCompleted;
     bool choosingManager;
     std::vector<CardOption> currentOptions;
-    std::vector<SelectedVisual> sidebarVisuals;
+
+    std::vector<std::unique_ptr<SelectedVisual>> sidebarVisuals;
+    std::vector<std::unique_ptr<SelectedVisual>> reserveVisuals;
 
     sf::Sprite previewSprite;
     int selectedSwapIndex;
@@ -83,4 +85,6 @@ private:
     void selectPlayer(int index);
     void updateStatsUI();
     void updateLinksVisuals();
+
+    void handleSwapSelection(int index, bool isReserve);
 };
