@@ -645,7 +645,7 @@ void DraftSession::handleSwapSelection(int index, bool isReserve) {
         sidebarVisuals[k]->sprite.setColor(sf::Color::White);
     }
 
-    for (auto& rv : reserveVisuals) {
+    for (const auto& rv : reserveVisuals) {
         rv->sprite.setScale({0.30f, 0.30f});
         rv->sprite.setColor(sf::Color::White);
     }
