@@ -125,7 +125,7 @@ Player* Team::getPlayerOnPosition(const std::string& pos) const {
     return nullptr;
 }
 Player* Team::getReserve(int index) const {
-    if (index >= 0 && index < reserves.size()) return reserves[index].get();
+    if (index >= 0 && static_cast<size_t>(index) < reserves.size()) return reserves[index].get();
     return nullptr;
 }
 
@@ -154,7 +154,7 @@ void Team::swapPlayers(const string& pos1, const string& pos2) {
 }
 
 void Team::swapReserves(int index1, int index2) {
-    if (index1 < 0 || index1 >= reserves.size() || index2 < 0 || index2 >= reserves.size()) {
+    if (index1 < 0 || static_cast<size_t>(index1) >= reserves.size() || index2 < 0 || static_cast<size_t>(index2) >= reserves.size()) {
         throw InvalidOperationException("Index rezerva invalid!");
     }
     if (index1 == index2) return;
@@ -164,7 +164,7 @@ void Team::swapReserves(int index1, int index2) {
 
 void Team::swapStarterWithReserve(const std::string& starterPos, int reserveIdx) {
     if (!players.contains(starterPos)) throw InvalidOperationException("Slot titular gol!");
-    if (reserveIdx < 0 || reserveIdx >= reserves.size()) throw InvalidOperationException("Index rezerva invalid!");
+    if (reserveIdx < 0 || static_cast<size_t>(reserveIdx) >= reserves.size()) throw InvalidOperationException("Index rezerva invalid!");
 
     const Player* resPlayer = reserves[reserveIdx].get();
 
