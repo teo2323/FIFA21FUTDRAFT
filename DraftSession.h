@@ -20,8 +20,9 @@ struct CardOption {
     Manager manager;
     bool isManager;
 
-    CardOption(const sf::Font& font, const sf::Texture& dummyTex)
-        : sprite(dummyTex), nameText(font), ratingText(font), isManager(false) {}
+    CardOption(const sf::Font &font, const sf::Texture &dummyTex)
+        : sprite(dummyTex), nameText(font), ratingText(font), isManager(false) {
+    }
 };
 
 
@@ -31,10 +32,11 @@ struct SelectedVisual {
     sf::Text info;
 
 
-    SelectedVisual(const sf::Font& font, sf::Texture texCopy)
+    SelectedVisual(const sf::Font &font, sf::Texture texCopy)
         : texture(std::move(texCopy)),
           sprite(texture),
-          info(font) {}
+          info(font) {
+    }
 };
 
 class DraftSession {
@@ -44,7 +46,7 @@ class DraftSession {
     std::map<std::string, std::string> positionMap;
 
 
-    sf::RenderWindow& window;
+    sf::RenderWindow &window;
     sf::Font font;
     sf::Texture backgroundTexture;
     sf::Sprite backgroundSprite;
@@ -65,25 +67,35 @@ class DraftSession {
     bool choosingManager;
     std::vector<CardOption> currentOptions;
 
-    std::vector<std::unique_ptr<SelectedVisual>> sidebarVisuals;
-    std::vector<std::unique_ptr<SelectedVisual>> reserveVisuals;
+    std::vector<std::unique_ptr<SelectedVisual> > sidebarVisuals;
+    std::vector<std::unique_ptr<SelectedVisual> > reserveVisuals;
 
     sf::Sprite previewSprite;
     int selectedSwapIndex;
-    std::vector<std::unique_ptr<ChemistryLink>> linkLines;
+    std::vector<std::unique_ptr<ChemistryLink> > linkLines;
+
 public:
-    DraftSession(sf::RenderWindow& win, const Formation& f);
+    DraftSession(sf::RenderWindow &win, const Formation &f);
+
     ~DraftSession() = default;
+
     void run();
 
 private:
     void draw();
+
     void handleInput();
+
     void loadResources();
+
     void generateOptions();
+
     void generateManagerOptions();
+
     void selectPlayer(int index);
+
     void updateStatsUI();
+
     void updateLinksVisuals();
 
     void handleSwapSelection(int index, bool isReserve);

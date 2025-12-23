@@ -8,15 +8,15 @@
 
 using namespace std;
 
-DraftSession::DraftSession(sf::RenderWindow& win, const Formation& f)
+DraftSession::DraftSession(sf::RenderWindow &win, const Formation &f)
     : formation(f),
       team(f),
       db(),
       positionMap{
-          {"GK","GK"},{"LB","LB"},{"LCB","CB"},{"RCB","CB"},{"RB","RB"},
-          {"LCM","CM"},{"CDM","CM"},{"RCM","CM"},{"LM","LM"},{"RM","RM"},
-          {"LW","LW"},{"RW","RW"},{"ST","ST"},{"LST","ST"},{"RST","ST"},
-          {"CB","CB"}
+          {"GK", "GK"}, {"LB", "LB"}, {"LCB", "CB"}, {"RCB", "CB"}, {"RB", "RB"},
+          {"LCM", "CM"}, {"CDM", "CM"}, {"RCM", "CM"}, {"LM", "LM"}, {"RM", "RM"},
+          {"LW", "LW"}, {"RW", "RW"}, {"ST", "ST"}, {"LST", "ST"}, {"RST", "ST"},
+          {"CB", "CB"}
       },
       window(win),
       font(),
@@ -38,8 +38,7 @@ DraftSession::DraftSession(sf::RenderWindow& win, const Formation& f)
       sidebarVisuals(),
       reserveVisuals(),
       previewSprite(dummyTexture),
-      selectedSwapIndex(-1)
-{
+      selectedSwapIndex(-1) {
     sidebarVisuals.reserve(12);
     reserveVisuals.reserve(7);
     sf::Texture dummy;
@@ -52,18 +51,18 @@ DraftSession::DraftSession(sf::RenderWindow& win, const Formation& f)
 void DraftSession::updateLinksVisuals() {
     linkLines.clear();
 
-    const auto& links = formation.getLinks();
-    const auto& coords = formation.getCoordinates();
-    const auto& positions = formation.getPositions();
+    const auto &links = formation.getLinks();
+    const auto &coords = formation.getCoordinates();
+    const auto &positions = formation.getPositions();
 
-    auto getIndex = [&](const string& posName) -> int {
+    auto getIndex = [&](const string &posName) -> int {
         for (size_t i = 0; i < positions.size(); ++i) {
             if (positions[i] == posName) return static_cast<int>(i);
         }
         return -1;
     };
 
-    for (const auto& link : links) {
+    for (const auto &link: links) {
         int idx1 = getIndex(link.first);
         int idx2 = getIndex(link.second);
 
@@ -71,8 +70,8 @@ void DraftSession::updateLinksVisuals() {
             sf::Vector2f p1 = coords[idx1];
             sf::Vector2f p2 = coords[idx2];
 
-            const Player* ptr1 = team.getPlayerOnPosition(link.first);
-            const Player* ptr2 = team.getPlayerOnPosition(link.second);
+            const Player *ptr1 = team.getPlayerOnPosition(link.first);
+            const Player *ptr2 = team.getPlayerOnPosition(link.second);
 
             int linkValue = 0;
             if (ptr1 && ptr2) {
@@ -121,7 +120,7 @@ void DraftSession::loadResources() {
         backgroundSprite.setTexture(backgroundTexture, true);
 
         sf::FloatRect bgBounds = backgroundSprite.getLocalBounds();
-        backgroundSprite.setOrigin({bgBounds.size.x/2.0f, bgBounds.size.y/2.0f});
+        backgroundSprite.setOrigin({bgBounds.size.x / 2.0f, bgBounds.size.y / 2.0f});
         backgroundSprite.setPosition({765.0f, 360.0f});
 
         float scaleY = 720.0f / bgBounds.size.y;
@@ -174,14 +173,16 @@ void DraftSession::generateManagerOptions() {
     int count = min(static_cast<int>(candidates.size()), 5);
     currentOptions.reserve(count);
 
-    float cardW = 140.0f; float cardH = 200.0f; float gap = 20.0f;
+    float cardW = 140.0f;
+    float cardH = 200.0f;
+    float gap = 20.0f;
     float totalW = (static_cast<float>(count) * cardW) + (static_cast<float>(count - 1) * gap);
     float startX = 765.0f - (totalW / 2.0f);
     float startY = 260.0f;
 
     for (int i = 0; i < count; ++i) {
         currentOptions.emplace_back(font, dummyTexture);
-        CardOption& card = currentOptions.back();
+        CardOption &card = currentOptions.back();
 
         card.manager = candidates[i];
         card.isManager = true;
@@ -215,8 +216,8 @@ void DraftSession::generateManagerOptions() {
         card.nameText.setString(card.manager.getName());
         card.nameText.setCharacterSize(14);
         sf::FloatRect tr = card.nameText.getLocalBounds();
-        card.nameText.setOrigin({tr.size.x/2.0f, 0.0f});
-        card.nameText.setPosition({card.shape.getPosition().x + cardW/2.0f, startY + cardH - 25.0f});
+        card.nameText.setOrigin({tr.size.x / 2.0f, 0.0f});
+        card.nameText.setPosition({card.shape.getPosition().x + cardW / 2.0f, startY + cardH - 25.0f});
 
         card.ratingText.setString("MNG");
         card.ratingText.setFillColor(sf::Color::Cyan);
@@ -226,7 +227,7 @@ void DraftSession::generateManagerOptions() {
 
 void DraftSession::generateOptions() {
     currentOptions.clear();
-    const vector<string>& positions = formation.getPositions();
+    const vector<string> &positions = formation.getPositions();
     size_t totalStarters = positions.size();
     size_t totalReserves = 7;
 
@@ -234,11 +235,11 @@ void DraftSession::generateOptions() {
         string currentPos = positions[currentPositionIndex];
         string dbGroup = positionMap[currentPos];
 
-        const auto& allCandidates = db.getPlayersByPosition(dbGroup);
-        vector<Player*> validCandidates;
+        const auto &allCandidates = db.getPlayersByPosition(dbGroup);
+        vector<Player *> validCandidates;
         validCandidates.reserve(allCandidates.size());
 
-        for (const auto& uPtr : allCandidates) {
+        for (const auto &uPtr: allCandidates) {
             if (!team.isPlayerInTeam(*uPtr)) {
                 validCandidates.push_back(uPtr.get());
             }
@@ -250,7 +251,9 @@ void DraftSession::generateOptions() {
 
         int count = min(static_cast<int>(validCandidates.size()), 5);
 
-        float cardW = 140.0f; float cardH = 200.0f; float gap = 20.0f;
+        float cardW = 140.0f;
+        float cardH = 200.0f;
+        float gap = 20.0f;
         float totalW = (static_cast<float>(count) * cardW) + (static_cast<float>(count - 1) * gap);
         float startX = 765.0f - (totalW / 2.0f);
         float startY = 260.0f;
@@ -259,9 +262,9 @@ void DraftSession::generateOptions() {
 
         for (int i = 0; i < count; ++i) {
             currentOptions.emplace_back(font, dummyTexture);
-            CardOption& card = currentOptions.back();
+            CardOption &card = currentOptions.back();
             card.playerPtr = validCandidates[i]->clone();
-            Player& pRef = *card.playerPtr;
+            Player &pRef = *card.playerPtr;
 
             card.shape.setSize({cardW, cardH});
             card.shape.setFillColor(sf::Color(40, 40, 40, 240));
@@ -295,14 +298,13 @@ void DraftSession::generateOptions() {
             card.nameText.setString(pRef.getName());
             card.nameText.setCharacterSize(14);
             sf::FloatRect tr = card.nameText.getLocalBounds();
-            card.nameText.setOrigin({tr.size.x/2.0f, 0.0f});
-            card.nameText.setPosition({card.shape.getPosition().x + cardW/2.0f, startY + cardH - 25.0f});
+            card.nameText.setOrigin({tr.size.x / 2.0f, 0.0f});
+            card.nameText.setPosition({card.shape.getPosition().x + cardW / 2.0f, startY + cardH - 25.0f});
 
             card.ratingText.setString(to_string(pRef.getRating()));
             card.ratingText.setPosition({card.shape.getPosition().x + 5.0f, startY + 5.0f});
         }
-    }
-    else if (static_cast<size_t>(currentPositionIndex) < totalStarters + totalReserves) {
+    } else if (static_cast<size_t>(currentPositionIndex) < totalStarters + totalReserves) {
         int resIdx = currentPositionIndex - static_cast<int>(totalStarters);
         string dbGroup;
 
@@ -311,28 +313,25 @@ void DraftSession::generateOptions() {
 
         if (resIdx == 0) {
             dbGroup = "GK";
-        }
-        else if (resIdx == 1 || resIdx == 2) {
+        } else if (resIdx == 1 || resIdx == 2) {
             vector<string> defs = {"CB", "LB", "RB"};
             uniform_int_distribution<> dist(0, 2);
             dbGroup = defs[dist(g)];
-        }
-        else if (resIdx == 3 || resIdx == 4) {
+        } else if (resIdx == 3 || resIdx == 4) {
             vector<string> mids = {"CM", "LM", "RM"};
             uniform_int_distribution<> dist(0, 2);
             dbGroup = mids[dist(g)];
-        }
-        else {
+        } else {
             vector<string> atts = {"ST", "LW", "RW"};
             uniform_int_distribution<> dist(0, 2);
             dbGroup = atts[dist(g)];
         }
 
-        const auto& allCandidates = db.getPlayersByPosition(dbGroup);
-        vector<Player*> validCandidates;
+        const auto &allCandidates = db.getPlayersByPosition(dbGroup);
+        vector<Player *> validCandidates;
         validCandidates.reserve(allCandidates.size());
 
-        for (const auto& uPtr : allCandidates) {
+        for (const auto &uPtr: allCandidates) {
             if (!team.isPlayerInTeam(*uPtr)) {
                 validCandidates.push_back(uPtr.get());
             }
@@ -342,7 +341,9 @@ void DraftSession::generateOptions() {
 
         int count = min(static_cast<int>(validCandidates.size()), 5);
 
-        float cardW = 140.0f; float cardH = 200.0f; float gap = 20.0f;
+        float cardW = 140.0f;
+        float cardH = 200.0f;
+        float gap = 20.0f;
         float totalW = (static_cast<float>(count) * cardW) + (static_cast<float>(count - 1) * gap);
         float startX = 765.0f - (totalW / 2.0f);
         float startY = 260.0f;
@@ -351,9 +352,9 @@ void DraftSession::generateOptions() {
 
         for (int i = 0; i < count; ++i) {
             currentOptions.emplace_back(font, dummyTexture);
-            CardOption& card = currentOptions.back();
+            CardOption &card = currentOptions.back();
             card.playerPtr = validCandidates[i]->clone();
-            Player& pRef = *card.playerPtr;
+            Player &pRef = *card.playerPtr;
 
             card.shape.setSize({cardW, cardH});
             card.shape.setFillColor(sf::Color(50, 50, 70, 240));
@@ -387,14 +388,13 @@ void DraftSession::generateOptions() {
             card.nameText.setString(pRef.getName());
             card.nameText.setCharacterSize(14);
             sf::FloatRect tr = card.nameText.getLocalBounds();
-            card.nameText.setOrigin({tr.size.x/2.0f, 0.0f});
-            card.nameText.setPosition({card.shape.getPosition().x + cardW/2.0f, startY + cardH - 25.0f});
+            card.nameText.setOrigin({tr.size.x / 2.0f, 0.0f});
+            card.nameText.setPosition({card.shape.getPosition().x + cardW / 2.0f, startY + cardH - 25.0f});
 
             card.ratingText.setString(to_string(pRef.getRating()));
             card.ratingText.setPosition({card.shape.getPosition().x + 5.0f, startY + 5.0f});
         }
-    }
-    else {
+    } else {
         if (!choosingManager) {
             choosingManager = true;
             generateManagerOptions();
@@ -406,16 +406,16 @@ void DraftSession::generateOptions() {
 
 void DraftSession::selectPlayer(int index) {
     if (index < 0 || static_cast<size_t>(index) >= currentOptions.size()) return;
-    CardOption& choice = currentOptions[index];
+    CardOption &choice = currentOptions[index];
 
     if (choice.isManager) {
         team.setManager(choice.manager);
         cout << "Manager Ales: " << choice.manager.getName() << "\n";
 
-        const sf::Texture& texToCopy = (choice.texture.getSize().x > 0) ? choice.texture : defaultManagerTexture;
+        const sf::Texture &texToCopy = (choice.texture.getSize().x > 0) ? choice.texture : defaultManagerTexture;
 
         sidebarVisuals.push_back(make_unique<SelectedVisual>(font, texToCopy));
-        SelectedVisual& sv = *sidebarVisuals.back();
+        SelectedVisual &sv = *sidebarVisuals.back();
 
         sv.sprite.setTexture(sv.texture, true);
 
@@ -424,7 +424,7 @@ void DraftSession::selectPlayer(int index) {
 
         sv.sprite.setScale({0.9f, 0.9f});
         sf::FloatRect b = sv.sprite.getLocalBounds();
-        sv.sprite.setOrigin({b.size.x/2.0f, b.size.y/2.0f});
+        sv.sprite.setOrigin({b.size.x / 2.0f, b.size.y / 2.0f});
         sv.sprite.setPosition({sidebarCenterX, mY});
 
         sv.info.setString("Manager\n" + choice.manager.getNationality());
@@ -432,7 +432,7 @@ void DraftSession::selectPlayer(int index) {
         sv.info.setFillColor(sf::Color::Cyan);
 
         sf::FloatRect tr = sv.info.getLocalBounds();
-        sv.info.setOrigin({tr.size.x/2.0f, 0.0f});
+        sv.info.setOrigin({tr.size.x / 2.0f, 0.0f});
         sv.info.setPosition({sidebarCenterX, mY + 100.0f});
 
         updateStatsUI();
@@ -449,10 +449,10 @@ void DraftSession::selectPlayer(int index) {
             string posLabel = formation.getPositions()[currentPositionIndex];
             team.addPlayer(posLabel, std::move(choice.playerPtr));
 
-            const sf::Texture& tx = (choice.texture.getSize().x > 0) ? choice.texture : defaultCardTexture;
+            const sf::Texture &tx = (choice.texture.getSize().x > 0) ? choice.texture : defaultCardTexture;
 
             sidebarVisuals.push_back(make_unique<SelectedVisual>(font, tx));
-            SelectedVisual& sv = *sidebarVisuals.back();
+            SelectedVisual &sv = *sidebarVisuals.back();
             sv.sprite.setTexture(sv.texture, true);
 
             sf::Vector2f pitchPos = formation.getCoordinates()[currentPositionIndex];
@@ -465,14 +465,13 @@ void DraftSession::selectPlayer(int index) {
             sv.info.setCharacterSize(12);
             sv.info.setOutlineColor(sf::Color::Black);
             sv.info.setOutlineThickness(1);
-        }
-        else {
+        } else {
             team.addReserve(std::move(choice.playerPtr));
 
-            const sf::Texture& tx = (choice.texture.getSize().x > 0) ? choice.texture : defaultCardTexture;
+            const sf::Texture &tx = (choice.texture.getSize().x > 0) ? choice.texture : defaultCardTexture;
 
             reserveVisuals.push_back(make_unique<SelectedVisual>(font, tx));
-            SelectedVisual& sv = *reserveVisuals.back();
+            SelectedVisual &sv = *reserveVisuals.back();
             sv.sprite.setTexture(sv.texture, true);
 
             int resIdx = currentPositionIndex - static_cast<int>(totalStarters);
@@ -506,13 +505,13 @@ void DraftSession::updateStatsUI() {
     chemistryDisplay.setString("CHEMISTRY: " + to_string(chem));
     overallDisplay.setString("OVERALL: " + to_string(overall));
 
-    const auto& positions = formation.getPositions();
-    const auto& coords = formation.getCoordinates();
+    const auto &positions = formation.getPositions();
+    const auto &coords = formation.getCoordinates();
 
     for (size_t i = 0; i < sidebarVisuals.size(); ++i) {
         if (i < positions.size()) {
             string posLabel = positions[i];
-            const Player* pPtr = team.getPlayerOnPosition(posLabel);
+            const Player *pPtr = team.getPlayerOnPosition(posLabel);
 
             if (pPtr) {
                 int indivChem = team.getPlayerChemistry(posLabel);
@@ -532,8 +531,8 @@ void DraftSession::updateStatsUI() {
         }
     }
 
-    for (size_t i=0; i < reserveVisuals.size(); ++i) {
-        const Player* res = team.getReserve(static_cast<int>(i));
+    for (size_t i = 0; i < reserveVisuals.size(); ++i) {
+        const Player *res = team.getReserve(static_cast<int>(i));
         if (res) {
             reserveVisuals[i]->info.setString("");
         }
@@ -542,7 +541,6 @@ void DraftSession::updateStatsUI() {
 
 
 void DraftSession::handleSwapSelection(int index, bool isReserve) {
-
     int encodedIndex = isReserve ? (100 + index) : index;
 
 
@@ -559,7 +557,6 @@ void DraftSession::handleSwapSelection(int index, bool isReserve) {
     }
 
     if (selectedSwapIndex == encodedIndex) {
-
         if (isReserve) {
             reserveVisuals[index]->sprite.setColor(sf::Color::White);
             reserveVisuals[index]->sprite.setScale({0.30f, 0.30f});
@@ -587,10 +584,7 @@ void DraftSession::handleSwapSelection(int index, bool isReserve) {
 
             sidebarVisuals[idx1]->sprite.setPosition(formation.getCoordinates()[idx1]);
             sidebarVisuals[idx2]->sprite.setPosition(formation.getCoordinates()[idx2]);
-        }
-
-        else if (!firstIsReserve && isReserve) {
-
+        } else if (!firstIsReserve && isReserve) {
             string pos = formation.getPositions()[idx1];
 
             team.swapStarterWithReserve(pos, idx2);
@@ -601,12 +595,10 @@ void DraftSession::handleSwapSelection(int index, bool isReserve) {
             sidebarVisuals[idx1]->sprite.setPosition(formation.getCoordinates()[idx1]);
 
 
-            float startY = 100.0f; float gapY = 85.0f;
+            float startY = 100.0f;
+            float gapY = 85.0f;
             reserveVisuals[idx2]->sprite.setPosition({125.0f, startY + idx2 * gapY});
-        }
-
-        else if (firstIsReserve && !isReserve) {
-
+        } else if (firstIsReserve && !isReserve) {
             string pos = formation.getPositions()[idx2];
 
             team.swapStarterWithReserve(pos, idx1);
@@ -616,23 +608,22 @@ void DraftSession::handleSwapSelection(int index, bool isReserve) {
 
             sidebarVisuals[idx2]->sprite.setPosition(formation.getCoordinates()[idx2]);
 
-            float startY = 100.0f; float gapY = 85.0f;
+            float startY = 100.0f;
+            float gapY = 85.0f;
             reserveVisuals[idx1]->sprite.setPosition({125.0f, startY + idx1 * gapY});
-        }
-
-        else {
+        } else {
             team.swapReserves(idx1, idx2);
 
             std::swap(reserveVisuals[idx1], reserveVisuals[idx2]);
 
-            float startY = 100.0f; float gapY = 85.0f;
+            float startY = 100.0f;
+            float gapY = 85.0f;
             reserveVisuals[idx1]->sprite.setPosition({125.0f, startY + idx1 * gapY});
             reserveVisuals[idx2]->sprite.setPosition({125.0f, startY + idx2 * gapY});
         }
 
         updateStatsUI();
-
-    } catch (const GameException& e) {
+    } catch (const GameException &e) {
         cerr << "SWAP BLOCAT: " << e.what() << endl;
     }
 
@@ -645,7 +636,7 @@ void DraftSession::handleSwapSelection(int index, bool isReserve) {
         sidebarVisuals[k]->sprite.setColor(sf::Color::White);
     }
 
-    for (const auto& rv : reserveVisuals) {
+    for (const auto &rv: reserveVisuals) {
         rv->sprite.setScale({0.30f, 0.30f});
         rv->sprite.setColor(sf::Color::White);
     }
@@ -658,8 +649,7 @@ void DraftSession::handleInput() {
         if (event->is<sf::Event::Closed>()) {
             window.close();
             isDrafting = false;
-        }
-        else if (const auto* kp = event->getIf<sf::Event::KeyPressed>()) {
+        } else if (const auto *kp = event->getIf<sf::Event::KeyPressed>()) {
             if (kp->code == sf::Keyboard::Key::Escape) {
                 if (selectedSwapIndex != -1) {
                     bool isRes = (selectedSwapIndex >= 100);
@@ -670,7 +660,7 @@ void DraftSession::handleInput() {
                         reserveVisuals[idx]->sprite.setColor(sf::Color::White);
                     } else {
                         if (static_cast<size_t>(idx) >= formation.getPositions().size())
-                             sidebarVisuals[idx]->sprite.setScale({0.9f, 0.9f});
+                            sidebarVisuals[idx]->sprite.setScale({0.9f, 0.9f});
                         else sidebarVisuals[idx]->sprite.setScale({0.44f, 0.44f});
 
                         sidebarVisuals[idx]->sprite.setColor(sf::Color::White);
@@ -680,8 +670,7 @@ void DraftSession::handleInput() {
                     isDrafting = false;
                 }
             }
-        }
-        else if (const auto* mp = event->getIf<sf::Event::MouseButtonPressed>()) {
+        } else if (const auto *mp = event->getIf<sf::Event::MouseButtonPressed>()) {
             if (mp->button == sf::Mouse::Button::Left) {
                 sf::Vector2f mPos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
 
@@ -711,7 +700,7 @@ void DraftSession::handleInput() {
                         goto end_click;
                     }
                 }
-                end_click:;
+            end_click:;
             }
         }
     }
@@ -729,15 +718,15 @@ void DraftSession::draw() {
     window.draw(backgroundSprite);
     window.draw(sidebar);
 
-    for (const auto& link : linkLines) {
+    for (const auto &link: linkLines) {
         link->draw(window);
     }
 
-    for (const auto& item : sidebarVisuals) {
+    for (const auto &item: sidebarVisuals) {
         window.draw(item->sprite);
         window.draw(item->info);
     }
-    for (const auto& item : reserveVisuals) {
+    for (const auto &item: reserveVisuals) {
         window.draw(item->sprite);
         window.draw(item->info);
     }
@@ -751,7 +740,6 @@ void DraftSession::draw() {
         if (choosingManager) {
             titleText = "Alege Managerul";
         } else {
-
             if (static_cast<size_t>(currentPositionIndex) < formation.getPositions().size()) {
                 titleText = "Alege: " + formation.getPositions()[currentPositionIndex];
             } else {
@@ -765,7 +753,7 @@ void DraftSession::draw() {
         pickText.setOutlineThickness(2);
 
         sf::FloatRect tr = pickText.getLocalBounds();
-        pickText.setOrigin({tr.size.x/2.0f, 0.0f});
+        pickText.setOrigin({tr.size.x / 2.0f, 0.0f});
         pickText.setPosition({765.0f, 50.0f});
         window.draw(pickText);
 
@@ -774,29 +762,29 @@ void DraftSession::draw() {
 
         if (!currentOptions.empty()) {
             sf::RectangleShape overlayBar({1280.0f, 250.0f});
-            overlayBar.setFillColor(sf::Color(0,0,0,150));
+            overlayBar.setFillColor(sf::Color(0, 0, 0, 150));
             overlayBar.setPosition({0.0f, 240.0f});
             window.draw(overlayBar);
         }
 
-        for (auto& opt : currentOptions) {
+        for (auto &opt: currentOptions) {
             if (opt.shape.getGlobalBounds().contains(mPos)) {
                 opt.shape.setOutlineColor(sf::Color::Yellow);
 
                 if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Right)) {
                     showPreview = true;
 
-                    const sf::Texture* fallbackTexture = &defaultCardTexture;
+                    const sf::Texture *fallbackTexture = &defaultCardTexture;
                     if (opt.isManager) {
                         fallbackTexture = &defaultManagerTexture;
                     }
 
-                    const sf::Texture& textureToShow = (opt.texture.getSize().x > 0) ? opt.texture : *fallbackTexture;
+                    const sf::Texture &textureToShow = (opt.texture.getSize().x > 0) ? opt.texture : *fallbackTexture;
 
                     previewSprite.setTexture(textureToShow, true);
 
                     sf::FloatRect bounds = previewSprite.getLocalBounds();
-                    previewSprite.setOrigin({bounds.size.x/2.0f, bounds.size.y/2.0f});
+                    previewSprite.setOrigin({bounds.size.x / 2.0f, bounds.size.y / 2.0f});
                     previewSprite.setPosition({765.0f, 360.0f});
 
                     if (textureToShow.getSize().x < 200) {
@@ -817,7 +805,7 @@ void DraftSession::draw() {
 
         if (showPreview) {
             sf::RectangleShape overlay({1280.0f, 720.0f});
-            overlay.setFillColor(sf::Color(0,0,0,200));
+            overlay.setFillColor(sf::Color(0, 0, 0, 200));
             window.draw(overlay);
             window.draw(previewSprite);
         }

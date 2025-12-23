@@ -7,18 +7,19 @@
 #include "Formation.h"
 #include "Testers.h"
 #include "Exception.h"
-//sincer sa fiu mi-a cam dat dauna totala merge-ul cu README-ul pe care il updatasem din github direct
+
+
 struct MenuButton {
     sf::RectangleShape shape;
     sf::Text label;
     std::string formationName;
 
-    explicit MenuButton(const sf::Font& font) : label(font) {}
+    explicit MenuButton(const sf::Font &font) : label(font) {
+    }
 };
 
 int main() {
     try {
-
         std::cout << "--- Rulare Teste Interne ---\n";
         Testers::runPlayerTests();
         Testers::runManagerTests();
@@ -27,7 +28,8 @@ int main() {
 
         sf::ContextSettings settings;
         settings.antiAliasingLevel = 8;
-        sf::RenderWindow window(sf::VideoMode({1280, 720}), "FIFA Draft - OOP Project", sf::Style::Default, sf::State::Windowed, settings);
+        sf::RenderWindow window(sf::VideoMode({1280, 720}), "FIFA Draft - OOP Project", sf::Style::Default,
+                                sf::State::Windowed, settings);
         window.setFramerateLimit(60);
 
         sf::Font font;
@@ -39,14 +41,13 @@ int main() {
         std::map<std::string, sf::Texture> formationTextures;
         std::vector<std::string> formationNames = {"433", "442", "343", "4321", "532"};
 
-        for (const auto& name : formationNames) {
+        for (const auto &name: formationNames) {
             std::string path = "images/formations/" + name + ".png";
             sf::Texture tex;
             tex.setSmooth(true);
             if (tex.loadFromFile(path)) {
                 formationTextures[name] = std::move(tex);
             } else {
-
                 std::cerr << "Atentie: Lipseste imaginea " << path << "\n";
             }
         }
@@ -97,12 +98,11 @@ int main() {
             while (const std::optional event = window.pollEvent()) {
                 if (event->is<sf::Event::Closed>()) {
                     window.close();
-                }
-                else if (const auto* mousePress = event->getIf<sf::Event::MouseButtonPressed>()) {
+                } else if (const auto *mousePress = event->getIf<sf::Event::MouseButtonPressed>()) {
                     if (mousePress->button == sf::Mouse::Button::Left) {
                         sf::Vector2f mousePos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
 
-                        for (const auto& btn : menuButtons) {
+                        for (const auto &btn: menuButtons) {
                             if (btn.shape.getGlobalBounds().contains(mousePos)) {
                                 std::cout << "--> Formatie aleasa: " << btn.formationName << ". Incepe Draftul...\n";
 
@@ -121,7 +121,7 @@ int main() {
             sf::Vector2f mousePos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
             bool showPreview = false;
 
-            for (auto& btn : menuButtons) {
+            for (auto &btn: menuButtons) {
                 if (btn.shape.getGlobalBounds().contains(mousePos)) {
                     btn.shape.setScale({1.1f, 1.1f});
                     btn.shape.setFillColor(sf::Color(70, 200, 70));
@@ -147,7 +147,7 @@ int main() {
             window.draw(title);
             window.draw(subtitle);
 
-            for (const auto& btn : menuButtons) {
+            for (const auto &btn: menuButtons) {
                 window.draw(btn.shape);
                 window.draw(btn.label);
             }
@@ -161,14 +161,11 @@ int main() {
 
             window.display();
         }
-
-    } catch (const GameException& e) {
-
+    } catch (const GameException &e) {
         std::cerr << "\n[GAME ERROR]: " << e.what() << "\n";
         std::cerr << "Aplicatia se va inchide.\n";
         return -1;
-    } catch (const std::exception& e) {
-
+    } catch (const std::exception &e) {
         std::cerr << "\n[SYSTEM ERROR]: " << e.what() << "\n";
         return -2;
     } catch (...) {

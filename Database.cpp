@@ -6,7 +6,7 @@
 
 using namespace std;
 
-void Database::loadPlayers(const string& filename, const string& positionGroup) {
+void Database::loadPlayers(const string &filename, const string &positionGroup) {
     ifstream fin(filename);
     if (!fin.is_open()) {
         throw FileMissingException(filename);
@@ -46,7 +46,7 @@ void Database::loadPlayers(const string& filename, const string& positionGroup) 
     fin.close();
 }
 
-void Database::loadManagers(const string& filename) {
+void Database::loadManagers(const string &filename) {
     ifstream fin(filename);
     if (!fin.is_open()) {
         throw FileMissingException(filename);
@@ -85,24 +85,24 @@ void Database::loadAll() {
     loadManagers("MANAGER.txt");
 }
 
-const vector<Manager>& Database::getManagers() const {
+const vector<Manager> &Database::getManagers() const {
     return managers;
 }
 
-const vector<unique_ptr<Player>>& Database::getPlayersByPosition(const string& positionGroup) const {
-    static const vector<unique_ptr<Player>> empty{};
+const vector<unique_ptr<Player> > &Database::getPlayersByPosition(const string &positionGroup) const {
+    static const vector<unique_ptr<Player> > empty{};
     auto it = playersByPosition.find(positionGroup);
     if (it == playersByPosition.end()) return empty;
     return it->second;
 }
 
-ostream& operator<<(ostream& os, const Database& db) {
+ostream &operator<<(ostream &os, const Database &db) {
     os << "     Jucatori incarcati in baza de date    \n";
     if (db.playersByPosition.empty()) {
         os << "Baza de date este goala!\n";
         return os;
     }
-    for (const auto& entry : db.playersByPosition) {
+    for (const auto &entry: db.playersByPosition) {
         os << "\nPozitie: " << entry.first << " (" << entry.second.size() << " jucatori)\n";
     }
     return os;
