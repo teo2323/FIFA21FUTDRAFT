@@ -22,7 +22,7 @@ void GreenLink::draw(sf::RenderWindow &window) const {
 }
 
 YellowLink::YellowLink(sf::Vector2f p1, sf::Vector2f p2)
-    : ChemistryLink(p1, p2, 4.0f) {
+    : ChemistryLink(p1, p2, 6.0f) {
     line.setFillColor(sf::Color::Yellow);
 }
 
@@ -31,7 +31,7 @@ void YellowLink::draw(sf::RenderWindow &window) const {
 }
 
 OrangeLink::OrangeLink(sf::Vector2f p1, sf::Vector2f p2)
-    : ChemistryLink(p1, p2, 4.0f) {
+    : ChemistryLink(p1, p2, 6.0f) {
     line.setFillColor(sf::Color(255, 165, 0));
 }
 
@@ -40,7 +40,7 @@ void OrangeLink::draw(sf::RenderWindow &window) const {
 }
 
 RedLink::RedLink(sf::Vector2f p1, sf::Vector2f p2)
-    : ChemistryLink(p1, p2, 2.0f) {
+    : ChemistryLink(p1, p2, 6.0f) {
     line.setFillColor(sf::Color(200, 50, 50));
 }
 

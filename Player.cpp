@@ -133,5 +133,7 @@ unique_ptr<Player> Icon::clone() const {
 }
 
 int Icon::getChemistryPenalty(const string &currentSlot) const {
+    bool exact = (currentSlot == position);
+    if (exact) return 0;
     return 0;
 }
