@@ -3,3 +3,5 @@ Angel_Correa Argentina LaLiga AtleticoMadrid RM Midfielder 90
 Achraf_Hakimi Morocco SerieA InterMilano RM Midfielder 86
 Raphinha Brazil Ligue1 Rennes RM Midfielder 81
 Jadon_Sancho England Bundesliga BVB09_Dortmund RM Midfielder 92
+David_Beckham England Legends Legends RM Icon 93
+Luis_Figo Portugal Legends Legends RM Icon 93

@@ -2,6 +2,11 @@ De_Bruyne Belgium PremierLeague Manchester_City CM Midfielder 96
 De_Jong Netherlands LaLiga Barcelona CM Midfielder 94
 Radja_Nainggolan Belgium SerieA Cagliari CM Midfielder 93
 Marco_Verratti Italy Ligue1 PSG CM Midfielder 98
-Gica_Hagi Romania Legends Legends CM Midfielder 91
-Diego_Maradona Argentina Legends Legends CM Midfielder 98
+Gica_Hagi Romania Legends Legends CM Icon 91
+Diego_Maradona Argentina Legends Legends CM Icon 98
 Ngolo_Kante France PremierLeague Chelsea CM Midfielder 99
+Marco_Reus Germany Bundesliga BVB09_Dortmund CM Midfielder 87
+Nicusor_Stanciu Romania CeskaLiga Slavia_Praga CM Midfielder 81
+Budi Romania Superliga Astra_Giurgiu CM Midfielder 81
+Dan_Nistor Romania Superliga CSU_Craiova CM Midfielder 79
+Alexandru_Maxim Romania SuperLig Gaziantep CM Midfielder 74

@@ -3,3 +3,5 @@ Yannick_Carrasco Belgium LaLiga Atletico_Madrid LM Midfielder 92
 Douglas_Costa Brazil SerieA Juventus LM Midfielder 84
 Jonathan_Bamba France Ligue1 Lile LM Midfielder 92
 Kingsley_Coman France Bundesliga Bayern_Munich LM Midfielder 96
+Gheorghe_Hagi Romania Legends Legends LM Icon 92
+Ryan_Giggs Wales Legends Legends LM Icon 93

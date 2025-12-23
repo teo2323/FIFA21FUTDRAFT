@@ -3,3 +3,5 @@ Eden_Hazard Belgium LaLiga Real_Madrid LW Attacker 93
 El_Shaarawy Italy SerieA AS_Roma LW Attacker 88
 Neymar_Jr Brazil Ligue1 PSG LW Attacker 99
 Marcus_Thuram France Bundesliga Borussia_Monchengladbach LW Attacker 80
+Ronaldinho Brazil Legends Legends LW Icon 94
+Thierry_Henry France Legends Legends LW Icon 90

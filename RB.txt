@@ -4,3 +4,6 @@ Juan_Cuadrado Ecuador SerieA Juventus RB Defender 84
 Kenny_Lala France Ligue1 Strasbourg RB Defender 79
 Nordi_Mukiele France Bundesliga RB_Leipzig RB Defender 90
 Vali_Cretu Romania Superliga Steaua_Bucuresti RB Defender 70
+Deian_Sorescu Romania Superliga Dinamo_Bucuresti RB Defender 78
+Carlos_Alberto Brazil Legends Legends RB Icon 94
+Javier_Zanetti Argentina Legends Legends RB Icon 92

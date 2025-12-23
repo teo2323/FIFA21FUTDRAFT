@@ -123,3 +123,15 @@ int Attacker::getChemistryPenalty(const string &currentSlot) const {
     if (alternativePositions.contains(currentSlot)) return -2;
     return -5;
 }
+
+Icon::Icon(string n, string nat, string l, string c, string pos, string r, int rate)
+    : Player(std::move(n), std::move(nat), std::move(l), std::move(c), std::move(pos), std::move(r), rate) {
+}
+
+unique_ptr<Player> Icon::clone() const {
+    return make_unique<Icon>(*this);
+}
+
+int Icon::getChemistryPenalty(const string &currentSlot) const {
+    return 0;
+}

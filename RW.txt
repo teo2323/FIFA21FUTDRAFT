@@ -3,3 +3,5 @@ Lionel_Messi Argentina LaLiga Barcelona RW Attacker 93
 Hirving_Lozano Mexico SerieA Napoli RW Attacker 88
 Di_Maria Argentina Ligue1 PSG RW Attacker 97
 Leon_Bailey Jamaica Bundesliga Stuttgart RW Attacker 90
+Garrincha Brazil Legends Legends RW Icon 95
+George_Best Northen_Ireland Legends Legends RW Icon 94

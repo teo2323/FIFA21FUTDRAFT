@@ -4,4 +4,7 @@ Cristiano_Ronaldo Portugal SerieA Juventus ST Attacker 95
 Kylian_Mbappe France Ligue1 PSG ST Attacker 97
 Robert_Lewandowski Poland Bundesliga Bayern_Munich ST Attacker 98
 Denis_Alibec Romania Superliga Astra_Giurgiu ST Attacker 72
-Pele Brazil Legends Legends ST Attacker 99
+Pele Brazil Legends Legends ST Icon 99
+Ronaldo_Nazario Brazil Legends Legends ST Icon 97
+Johan_Cruyff Netherlands Legends Legends ST Icon 95
+Ben_Yedder France Ligue1 AS_Monaco ST Attacker 87

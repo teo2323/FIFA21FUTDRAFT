@@ -37,7 +37,11 @@ void Database::loadPlayers(const string &filename, const string &positionGroup) 
             newPlayer = make_unique<Midfielder>(name, nat, league, club, pos, role, rating);
         } else if (role == "Attacker") {
             newPlayer = make_unique<Attacker>(name, nat, league, club, pos, role, rating);
-        } else {
+        }
+        else if (role == "Icon") {
+            newPlayer = make_unique<Icon>(name, nat, league, club, pos, role, rating);
+        }
+        else {
             newPlayer = make_unique<Player>(name, nat, league, club, pos, role, rating);
         }
 

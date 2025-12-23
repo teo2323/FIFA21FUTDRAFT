@@ -5,3 +5,5 @@ Marquinhos Brazil Ligue1 PSG CB Defender 93
 Mats_Hummels Germany Bundesliga Bayern_Munich CB Defender 93
 Thiago_Silva Brazil PremierLeague Chelsea CB Defender 94
 Gerard_Pique Spain LaLiga Barcelona CB Defender 96
+Stefan_Radu Romania SerieA SS_Lazio CB Defender 78
+Paolo_Maldini Italy Legends Legends CB Icon 95

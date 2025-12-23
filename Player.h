@@ -98,3 +98,14 @@ public:
 
     [[nodiscard]] int getChemistryPenalty(const std::string &currentSlot) const override;
 };
+
+class Icon : public Player {
+public:
+    using Player::Player;
+
+    Icon(std::string n, std::string nat, std::string l, std::string c, std::string pos, std::string r, int rate);
+
+    [[nodiscard]] std::unique_ptr<Player> clone() const override;
+
+    [[nodiscard]] int getChemistryPenalty(const std::string &currentSlot) const override;
+};

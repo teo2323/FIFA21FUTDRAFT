@@ -4,3 +4,7 @@ Ter_Stegen Germany LaLiga Barcelona GK Goalkeeper 90
 Gianluigi_Donnarumma Italy SerieA AC_Milan GK Goalkeeper 87
 Keylor_Navas Costa_Rica Ligue1 PSG GK Goalkeeper 94
 Yann_Sommer Switzerland Bundesliga Borussia_Monchengladbach GK Goalkeeper 94
+Lev_Yashin Russia Legends Legends GK Icon 95
+Van_der_Sar Netherlands Legends Legends GK Icon 92
+Petr_Cech Czech_Republic Legends Legends GK Icon 92
+Ciprian_Tatarusanu Romania SerieA AC_Milan GK Goalkeeper 78
