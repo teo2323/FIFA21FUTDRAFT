@@ -345,7 +345,7 @@ void DraftSession::updateStatsUI() {
         }
     }
 
-    for (auto& res : reserveVisuals) {
+    for (const auto& res : reserveVisuals) {
         res->info.setString("");
     }
 }
