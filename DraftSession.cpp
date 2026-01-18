@@ -7,7 +7,7 @@
 #include <optional>
 #include <iomanip>
 #include <sstream>
-
+#include "Logger.h"
 using namespace std;
 
 DraftSession::DraftSession(sf::RenderWindow &win, const Formation &f, SessionStats<int>& stats)
@@ -520,10 +520,20 @@ void DraftSession::handleInput() {
 }
 
 void DraftSession::drawSummary() {
+
+    static bool logged = false;
+    if (!logged) {
+        string logMsg = "Draft Finished. Final Score: " + to_string((int)team.computeOverall());
+        Logger::getInstance().log(logMsg);
+
+        cout << "[Logger] " << logMsg << endl;
+        logged = true;
+    }
+
     window.clear(sf::Color(10, 10, 30));
 
     sf::Text title = UIFactory::createText(font, "DRAFT COMPLETE!", 50, sf::Color(255, 215, 0), {640, 100});
-
+    UIFactory::centerOrigin(title);
     sf::Text score = UIFactory::createText(font, "Final Overall: " + to_string((int)team.computeOverall()), 40, sf::Color::White, {640, 200});
 
 

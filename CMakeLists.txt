@@ -80,6 +80,8 @@ add_executable(${MAIN_EXECUTABLE_NAME}
         UIFactory.h
         GameApp.cpp
         GameApp.h
+        Logger.cpp
+        Logger.h
 )
 
 # NOTE: Add all defined targets (e.g. executables, libraries, etc. )
