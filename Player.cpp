@@ -72,9 +72,13 @@ unique_ptr<Player> Goalkeeper::clone() const { return make_unique<Goalkeeper>(*t
 
 int Goalkeeper::getChemistryPenalty(const string &currentSlot) const {
     if (currentSlot == "GK") return 0;
-    return -5;
+    return Player::getChemistryPenalty(currentSlot);
 }
 
+void Goalkeeper::print(ostream& os) const {
+    Player::print(os);
+    os << " [GK]";
+}
 
 Defender::Defender(string n, string nat, string l, string c, string pos, string r, int rate)
     : Player(std::move(n), std::move(nat), std::move(l), std::move(c), std::move(pos), std::move(r), rate) {
@@ -89,9 +93,13 @@ int Defender::getChemistryPenalty(const string &currentSlot) const {
     if (exact || isCentral) return 0;
 
     if (alternativePositions.contains(currentSlot)) return -2;
-    return -5;
+    return Player::getChemistryPenalty(currentSlot);;
 }
 
+void Defender::print(ostream& os) const {
+    Player::print(os);
+    os << " [DEF]";
+}
 
 Midfielder::Midfielder(string n, string nat, string l, string c, string pos, string r, int rate)
     : Player(std::move(n), std::move(nat), std::move(l), std::move(c), std::move(pos), std::move(r), rate) {
@@ -105,9 +113,10 @@ int Midfielder::getChemistryPenalty(const string &currentSlot) const {
     bool isCentral = (position == "CM" && (currentSlot == "LCM" || currentSlot == "RCM" || currentSlot == "CDM"));
     if (exact || isCentral) return 0;
     if (alternativePositions.contains(currentSlot)) return -2;
-    return -5;
+    return Player::getChemistryPenalty(currentSlot);
 }
 
+void Midfielder::print(ostream& os) const { Player::print(os); os << " [MID]"; }
 
 Attacker::Attacker(string n, string nat, string l, string c, string pos, string r, int rate)
     : Player(std::move(n), std::move(nat), std::move(l), std::move(c), std::move(pos), std::move(r), rate) {
@@ -121,8 +130,9 @@ int Attacker::getChemistryPenalty(const string &currentSlot) const {
     bool isStriker = (position == "ST" && (currentSlot == "LST" || currentSlot == "RST"));
     if (exact || isStriker) return 0;
     if (alternativePositions.contains(currentSlot)) return -2;
-    return -5;
+    return Player::getChemistryPenalty(currentSlot);
 }
+void Attacker::print(ostream& os) const { Player::print(os); os << " [ATT]"; }
 
 Icon::Icon(string n, string nat, string l, string c, string pos, string r, int rate)
     : Player(std::move(n), std::move(nat), std::move(l), std::move(c), std::move(pos), std::move(r), rate) {
@@ -133,7 +143,7 @@ unique_ptr<Player> Icon::clone() const {
 }
 
 int Icon::getChemistryPenalty(const string &currentSlot) const {
-    bool exact = (currentSlot == position);
-    if (exact) return 0;
+
     return 0;
 }
+void Icon::print(ostream& os) const { Player::print(os); os << " [ICN]"; }

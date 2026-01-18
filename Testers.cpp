@@ -15,27 +15,24 @@ void Testers::runPlayerTests() {
     Player p1("Ronaldo", "Portugal", "Juventus", "Manchester_United", "ST", "Attacker", 92);
     Player p2("Mbappe", "France", "Ligue1", "PSG", "ST", "Attacker", 91);
 
-    [[maybe_unused]] int rating1 = p1.getRating();
+    cout << "Player 1 Rating: " << p1.getRating() << "\n";
+    cout << "Player 1 Club: " << p1.getClub() << "\n";
+    cout << "Player 1 Role: " << p1.getRole() << "\n";
 
-    [[maybe_unused]] string club = p1.getClub();
-    [[maybe_unused]] string role = p1.getRole();
-
-    [[maybe_unused]] int link = p1.calcLink(p2);
+    cout << "Link P1-P2: " << p1.calcLink(p2) << "\n";
 
     Goalkeeper gk("Donnarumma", "Italy", "Ligue1", "PSG", "GK", "Goalkeeper", 89);
-    [[maybe_unused]] int pen1 = gk.getChemistryPenalty("GK");
-    [[maybe_unused]] int pen2 = gk.getChemistryPenalty("ST");
+    cout << "GK Penalty on GK: " << gk.getChemistryPenalty("GK") << "\n";
+    cout << "GK Penalty on ST: " << gk.getChemistryPenalty("ST") << "\n";
 
     Attacker att("Messi", "Argentina", "MLS", "Miami", "RW", "Attacker", 93);
     const auto &alts = att.getAltPositions();
-    [[maybe_unused]] bool hasAlt = !alts.empty();
+    if (!alts.empty()) cout << "Attacker has alt positions.\n";
 
     auto clonePtr = att.clone();
-    [[maybe_unused]] int cloneRat = clonePtr->getRating();
+    cout << "Clone Rating: " << clonePtr->getRating() << "\n";
 
-    [[maybe_unused]] int total = Player::getTotalPlayers();
-
-    cout << "Tests passed. Total players loaded so far: " << total << "\n";
+    cout << "Total players: " << Player::getTotalPlayers() << "\n";
     cout << "--- End Player Tests ---\n";
 }
 
@@ -43,11 +40,9 @@ void Testers::runManagerTests() {
     Manager m("Mouricio_Pochetino", "Argentina", "Ligue1");
     Player p("Messi", "Argentina", "LaLiga", "Barcelona", "RW", "Attacker", 93);
 
-    [[maybe_unused]] int chem = m.getChemistryBonus(p);
-    [[maybe_unused]] const std::string &Mname = m.getName();
-    [[maybe_unused]] const std::string &Pname = p.getName();
-
-    cout << "Test de chemistry intre managerul " << Mname << " Si jucatorul " << Pname << " | Chem: " << chem << "\n";
+    cout << "Chemistry Bonus: " << m.getChemistryBonus(p) << "\n";
+    cout << "Manager Name: " << m.getName() << "\n";
+    cout << "Player Name: " << p.getName() << "\n";
 }
 
 void Testers::runTeamTests() {
@@ -55,21 +50,17 @@ void Testers::runTeamTests() {
     Team t(f);
 
     auto p = make_unique<Attacker>("Messi", "Argentina", "LaLiga", "Barcelona", "RW", "Starter", 93);
-
-
     const Player &pRef = *p;
 
     t.addPlayer("RW", std::move(p));
 
-    [[maybe_unused]] double rating = t.computeRating();
-    [[maybe_unused]] int chem = t.computeChemistry();
-    [[maybe_unused]] double overall = t.computeOverall();
+    cout << "Team Rating: " << t.computeRating() << "\n";
+    cout << "Team Chemistry: " << t.computeChemistry() << "\n";
+    cout << "Team Overall: " << t.computeOverall() << "\n";
 
-    [[maybe_unused]] bool taken = t.positionTaken("RW");
-    [[maybe_unused]] bool inTeam = t.isPlayerInTeam(pRef);
+    if (t.positionTaken("RW")) cout << "RW is taken.\n";
+    if (t.isPlayerInTeam(pRef)) cout << "Messi is in team.\n";
 
-
-    [[maybe_unused]] const Player *ptr = t.getPlayerOnPosition("RW");
-
-    cout << "Echipa test: rating=" << rating << " | chem=" << chem << " | overall=" << overall << "\n";
+    const Player *ptr = t.getPlayerOnPosition("RW");
+    if (ptr) cout << "Player at RW: " << ptr->getName() << "\n";
 }

@@ -5,7 +5,7 @@ Formation::Formation(const string &n) : name(n) {
     if (n == "433") {
         positions = {"GK", "LB", "LCB", "RCB", "RB", "LCM", "CDM", "RCM", "LW", "ST", "RW"};
         coordinates = {
-            {855, 600}, // GK
+            {855, 600},
             {535, 500}, {690, 530}, {1015, 530}, {1180, 500},
             {650, 320}, {855, 340}, {1055, 320},
             {600, 110}, {855, 95}, {1105, 110}

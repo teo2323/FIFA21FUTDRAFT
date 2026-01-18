@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <iomanip>
 #include "Exception.h"
+
 using namespace std;
 
 Team::Team(const Formation &f) : formation(f) {
@@ -47,7 +48,6 @@ double Team::computeRating() const {
     double sum = 0;
     int count = 0;
 
-
     for (const auto &pair: players) {
         sum += pair.second->getRating();
         count++;
@@ -61,7 +61,6 @@ double Team::computeRating() const {
     if (count == 0) return 0.0;
     return sum / static_cast<double>(count);
 }
-
 
 int Team::getPlayerChemistry(const std::string &pos) const {
     if (!players.contains(pos)) return 0;
@@ -137,12 +136,14 @@ void Team::swapPlayers(const string &pos1, const string &pos2) {
         throw InvalidOperationException("Nu se poate face swap: Unul dintre sloturi este gol!");
     }
 
-
     const Player *p1 = players[pos1].get();
     const Player *p2 = players[pos2].get();
 
     auto *gk1 = dynamic_cast<const Goalkeeper *>(p1);
     auto *gk2 = dynamic_cast<const Goalkeeper *>(p2);
+
+    if (pos1 == "GK" && !gk2) throw InvalidOperationException("Doar un portar poate juca pe pozitia GK!");
+    if (pos2 == "GK" && !gk1) throw InvalidOperationException("Doar un portar poate juca pe pozitia GK!");
 
     if (gk1 && pos2 != "GK") {
         throw InvalidOperationException("Portarii nu pot juca pe pozitii din teren!");
@@ -172,8 +173,10 @@ void Team::swapStarterWithReserve(const std::string &starterPos, int reserveIdx)
             "Index rezerva invalid!");
 
     const Player *resPlayer = reserves[reserveIdx].get();
+    const Player *starterPlayer = players[starterPos].get();
 
     auto *resGK = dynamic_cast<const Goalkeeper *>(resPlayer);
+    auto *startGK = dynamic_cast<const Goalkeeper *>(starterPlayer);
 
     if (resGK && starterPos != "GK") {
         throw InvalidOperationException("Portarul de rezerva poate intra doar in poarta!");
@@ -181,6 +184,10 @@ void Team::swapStarterWithReserve(const std::string &starterPos, int reserveIdx)
 
     if (starterPos == "GK" && !resGK) {
         throw InvalidOperationException("In poarta poate intra doar un portar!");
+    }
+
+    if (startGK && starterPos == "GK") {
+
     }
 
     std::swap(players[starterPos], reserves[reserveIdx]);

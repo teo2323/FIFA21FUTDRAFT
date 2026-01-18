@@ -62,7 +62,7 @@ public:
     using Player::Player;
 
     [[nodiscard]] std::unique_ptr<Player> clone() const override;
-
+     void print(std::ostream &os) const override;
     [[nodiscard]] int getChemistryPenalty(const std::string &currentSlot) const override;
 };
 
@@ -73,7 +73,7 @@ public:
     Defender(std::string n, std::string nat, std::string l, std::string c, std::string pos, std::string r, int rate);
 
     [[nodiscard]] std::unique_ptr<Player> clone() const override;
-
+    void print(std::ostream &os) const override;
     [[nodiscard]] int getChemistryPenalty(const std::string &currentSlot) const override;
 };
 
@@ -84,7 +84,7 @@ public:
     Midfielder(std::string n, std::string nat, std::string l, std::string c, std::string pos, std::string r, int rate);
 
     [[nodiscard]] std::unique_ptr<Player> clone() const override;
-
+    void print(std::ostream &os) const override;
     [[nodiscard]] int getChemistryPenalty(const std::string &currentSlot) const override;
 };
 
@@ -95,7 +95,7 @@ public:
     Attacker(std::string n, std::string nat, std::string l, std::string c, std::string pos, std::string r, int rate);
 
     [[nodiscard]] std::unique_ptr<Player> clone() const override;
-
+    void print(std::ostream &os) const override;
     [[nodiscard]] int getChemistryPenalty(const std::string &currentSlot) const override;
 };
 
@@ -106,6 +106,6 @@ public:
     Icon(std::string n, std::string nat, std::string l, std::string c, std::string pos, std::string r, int rate);
 
     [[nodiscard]] std::unique_ptr<Player> clone() const override;
-
+    void print(std::ostream &os) const override;
     [[nodiscard]] int getChemistryPenalty(const std::string &currentSlot) const override;
 };

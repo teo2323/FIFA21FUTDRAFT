@@ -1,14 +1,14 @@
 #include "DraftSession.h"
-#include <filesystem>
-#include <optional>
+#include "UIFactory.h"
+#include "Exception.h"
 #include <algorithm>
 #include <random>
 #include <iostream>
-#include "Exception.h"
+#include <optional>
 
 using namespace std;
 
-DraftSession::DraftSession(sf::RenderWindow &win, const Formation &f)
+DraftSession::DraftSession(sf::RenderWindow &win, const Formation &f, SessionStats<int>& stats)
     : formation(f),
       team(f),
       db(),
@@ -18,18 +18,20 @@ DraftSession::DraftSession(sf::RenderWindow &win, const Formation &f)
           {"LW", "LW"}, {"RW", "RW"}, {"ST", "ST"}, {"LST", "ST"}, {"RST", "ST"},
           {"CB", "CB"}
       },
+      state(DraftState::DRAFTING),
+      globalStats(stats),
       window(win),
       font(),
       backgroundTexture(),
       backgroundSprite(backgroundTexture),
       defaultCardTexture(),
       defaultManagerTexture(),
-      sidebar(),
+      sidebar({250.0f, 720.0f}),
       dummyTexture(),
       ratingDisplay(font),
       chemistryDisplay(font),
       overallDisplay(font),
-      statsBackground(),
+      statsBackground({250.0f, 100.0f}),
       currentPositionIndex(0),
       isDrafting(true),
       draftCompleted(false),
@@ -38,68 +40,27 @@ DraftSession::DraftSession(sf::RenderWindow &win, const Formation &f)
       sidebarVisuals(),
       reserveVisuals(),
       previewSprite(dummyTexture),
-      selectedSwapIndex(-1) {
+      selectedSwapIndex(-1),
+      linkLines(),
+      finishButton({200.0f, 50.0f}),
+      finishText(font)
+{
     sidebarVisuals.reserve(12);
     reserveVisuals.reserve(7);
-    sf::Texture dummy;
-    previewSprite.setTexture(dummy);
+
+    if (!dummyTexture.resize({1, 1})) {}
+    previewSprite.setTexture(dummyTexture);
 
     loadResources();
     generateOptions();
-}
 
-void DraftSession::updateLinksVisuals() {
-    linkLines.clear();
-
-    const auto &links = formation.getLinks();
-    const auto &coords = formation.getCoordinates();
-    const auto &positions = formation.getPositions();
-
-    auto getIndex = [&](const string &posName) -> int {
-        for (size_t i = 0; i < positions.size(); ++i) {
-            if (positions[i] == posName) return static_cast<int>(i);
-        }
-        return -1;
-    };
-
-    for (const auto &link: links) {
-        int idx1 = getIndex(link.first);
-        int idx2 = getIndex(link.second);
-
-        if (idx1 != -1 && idx2 != -1) {
-            sf::Vector2f p1 = coords[idx1];
-            sf::Vector2f p2 = coords[idx2];
-
-            const Player *ptr1 = team.getPlayerOnPosition(link.first);
-            const Player *ptr2 = team.getPlayerOnPosition(link.second);
-
-            int linkValue = 0;
-            if (ptr1 && ptr2) {
-                linkValue = ptr1->calcLink(*ptr2);
-            }
-
-            switch (linkValue) {
-                case 3:
-                    linkLines.push_back(make_unique<GreenLink>(p1, p2));
-                    break;
-                case 2:
-                    linkLines.push_back(make_unique<YellowLink>(p1, p2));
-                    break;
-                case 1:
-                    linkLines.push_back(make_unique<OrangeLink>(p1, p2));
-                    break;
-                default:
-                    linkLines.push_back(make_unique<RedLink>(p1, p2));
-                    break;
-            }
-        }
-    }
+    finishButton = UIFactory::createButton({200.0f, 50.0f}, sf::Color::Green, {1150.0f, 650.0f});
+    finishText = UIFactory::createText(font, "FINISH", 24, sf::Color::Black, {1150.0f, 650.0f});
+    UIFactory::centerOrigin(finishText);
 }
 
 void DraftSession::loadResources() {
-    if (!font.openFromFile("arial.ttf")) {
-        throw FileMissingException("arial.ttf");
-    }
+    if (!font.openFromFile("arial.ttf")) throw FileMissingException("arial.ttf");
 
     ratingDisplay.setFont(font);
     chemistryDisplay.setFont(font);
@@ -108,9 +69,7 @@ void DraftSession::loadResources() {
     db.loadAll();
 
     if (!defaultCardTexture.loadFromFile("images/players/card_default.png")) {
-        if (!defaultCardTexture.resize(sf::Vector2u(100, 100))) {
-            cerr << "Critical: Resize failed.\n";
-        }
+        if(!defaultCardTexture.resize({100, 100})) {}
     }
     defaultCardTexture.setSmooth(true);
 
@@ -127,33 +86,25 @@ void DraftSession::loadResources() {
         backgroundSprite.setScale({scaleY, scaleY});
     }
 
-    sidebar.setSize(sf::Vector2f(250.f, 720.f));
-    sidebar.setFillColor(sf::Color(30, 30, 30, 255));
+    sidebar = UIFactory::createButton({250.0f, 720.0f}, sf::Color(30, 30, 30), {125.0f, 360.0f});
 
     if (!defaultManagerTexture.loadFromFile("images/managers/manager_default.png")) {
-        if (!defaultManagerTexture.resize(sf::Vector2u(100, 100))) {
-            cerr << "Critical: Resize failed.\n";
-        }
+        if(!defaultManagerTexture.resize({100, 100})) {}
     }
     defaultManagerTexture.setSmooth(true);
 
-    statsBackground.setSize(sf::Vector2f(250.f, 100.f));
-    statsBackground.setFillColor(sf::Color(0, 0, 0, 180));
+    statsBackground = UIFactory::createButton({260.0f, 120.0f}, sf::Color(0, 0, 0, 200), {365.f, 75.f});
     statsBackground.setOutlineColor(sf::Color::White);
-    statsBackground.setOutlineThickness(1);
-    statsBackground.setPosition({280.f, 20.f});
+    statsBackground.setOutlineThickness(2.0f);
 
-    ratingDisplay.setCharacterSize(18);
-    ratingDisplay.setFillColor(sf::Color::Yellow);
-    ratingDisplay.setPosition({280.f, 25.f});
+    ratingDisplay = UIFactory::createText(font, "", 22, sf::Color::Yellow, {295.f, 30.f});
+    ratingDisplay.setOrigin({0,0});
 
-    chemistryDisplay.setCharacterSize(18);
-    chemistryDisplay.setFillColor(sf::Color::Cyan);
-    chemistryDisplay.setPosition({280.f, 50.f});
+    chemistryDisplay = UIFactory::createText(font, "", 22, sf::Color::Cyan, {295.f, 65.f});
+    chemistryDisplay.setOrigin({0,0});
 
-    overallDisplay.setCharacterSize(18);
-    overallDisplay.setFillColor(sf::Color::Green);
-    overallDisplay.setPosition({280.f, 75.f});
+    overallDisplay = UIFactory::createText(font, "", 22, sf::Color::Green, {295.f, 100.f});
+    overallDisplay.setOrigin({0,0});
 
     updateStatsUI();
 }
@@ -162,36 +113,21 @@ void DraftSession::generateManagerOptions() {
     currentOptions.clear();
     vector<Manager> candidates = db.getManagers();
 
-    if (candidates.empty()) {
-        cerr << "ATENTIE: Nu s-au gasit manageri!\n";
-    }
-
-    static std::random_device rd;
-    static std::mt19937 g(rd());
-    std::shuffle(candidates.begin(), candidates.end(), g);
+    static random_device rd; static mt19937 g(rd());
+    shuffle(candidates.begin(), candidates.end(), g);
 
     int count = min(static_cast<int>(candidates.size()), 5);
-    currentOptions.reserve(count);
-
-    float cardW = 140.0f;
-    float cardH = 200.0f;
-    float gap = 20.0f;
-    float totalW = (static_cast<float>(count) * cardW) + (static_cast<float>(count - 1) * gap);
-    float startX = 765.0f - (totalW / 2.0f);
-    float startY = 260.0f;
+    float startX = 765.0f - ((count * 140.0f + (count - 1) * 20.0f) / 2.0f);
 
     for (int i = 0; i < count; ++i) {
-        currentOptions.emplace_back(font, dummyTexture);
-        CardOption &card = currentOptions.back();
+        currentOptions.push_back(make_unique<CardOption>(font, dummyTexture));
+        CardOption &card = *currentOptions.back();
 
         card.manager = candidates[i];
         card.isManager = true;
 
-        card.shape.setSize({cardW, cardH});
-        card.shape.setFillColor(sf::Color(30, 40, 70, 240));
+        card.shape = UIFactory::createButton({140.0f, 200.0f}, sf::Color(30, 40, 70, 240), {startX + i * 160.0f, 260.0f});
         card.shape.setOutlineColor(sf::Color(255, 215, 0));
-        card.shape.setOutlineThickness(3);
-        card.shape.setPosition({startX + i * (cardW + gap), startY});
 
         if (card.texture.loadFromFile(card.manager.getImagePath())) {
             card.texture.setSmooth(true);
@@ -200,116 +136,36 @@ void DraftSession::generateManagerOptions() {
             card.sprite.setTexture(defaultManagerTexture, true);
         }
 
-        sf::FloatRect bounds = card.sprite.getLocalBounds();
-        if (bounds.size.x > 0) {
-            float scaleX = (cardW - 10.0f) / bounds.size.x;
-            float scaleY = (cardH - 50.0f) / bounds.size.y;
-            float scale = min(scaleX, scaleY);
-            card.sprite.setScale({scale, scale});
-
-            card.sprite.setPosition({
-                card.shape.getPosition().x + (cardW - bounds.size.x * scale) / 2.0f,
-                card.shape.getPosition().y + 10.0f
-            });
+        sf::FloatRect b = card.sprite.getLocalBounds();
+        if (b.size.x > 0 && b.size.y > 0) {
+            float s = min(130.0f / b.size.x, 150.0f / b.size.y);
+            card.sprite.setScale({s, s});
+            card.sprite.setOrigin({b.size.x / 2.0f, b.size.y / 2.0f});
+            card.sprite.setPosition(card.shape.getPosition());
         }
 
-        card.nameText.setString(card.manager.getName());
-        card.nameText.setCharacterSize(14);
-        sf::FloatRect tr = card.nameText.getLocalBounds();
-        card.nameText.setOrigin({tr.size.x / 2.0f, 0.0f});
-        card.nameText.setPosition({card.shape.getPosition().x + cardW / 2.0f, startY + cardH - 25.0f});
-
-        card.ratingText.setString("MNG");
-        card.ratingText.setFillColor(sf::Color::Cyan);
-        card.ratingText.setPosition({card.shape.getPosition().x + 5.0f, startY + 5.0f});
+        card.nameText = UIFactory::createText(font, card.manager.getName(), 14, sf::Color::White, {card.shape.getPosition().x, card.shape.getPosition().y + 75});
+        card.ratingText = UIFactory::createText(font, "MNG", 14, sf::Color::Cyan, {card.shape.getPosition().x - 65, card.shape.getPosition().y - 95});
     }
 }
 
 void DraftSession::generateOptions() {
     currentOptions.clear();
-    const vector<string> &positions = formation.getPositions();
-    size_t totalStarters = positions.size();
-    size_t totalReserves = 7;
+    const auto &pos = formation.getPositions();
+    size_t starters = pos.size();
+    size_t reservesCount = 7;
+    size_t totalPlayers = starters + reservesCount;
 
-    if (static_cast<size_t>(currentPositionIndex) < totalStarters) {
-        string currentPos = positions[currentPositionIndex];
-        string dbGroup = positionMap[currentPos];
+    string dbGroup;
 
-        const auto &allCandidates = db.getPlayersByPosition(dbGroup);
-        vector<Player *> validCandidates;
-        validCandidates.reserve(allCandidates.size());
+    if (currentPositionIndex < (int)starters) {
+        dbGroup = positionMap[pos[currentPositionIndex]];
+    }
+    else if (currentPositionIndex < (int)totalPlayers) {
+        int resIdx = currentPositionIndex - (int)starters;
 
-        for (const auto &uPtr: allCandidates) {
-            if (!team.isPlayerInTeam(*uPtr)) {
-                validCandidates.push_back(uPtr.get());
-            }
-        }
-
-        static std::random_device rd;
-        static std::mt19937 g(rd());
-        std::shuffle(validCandidates.begin(), validCandidates.end(), g);
-
-        int count = min(static_cast<int>(validCandidates.size()), 5);
-
-        float cardW = 140.0f;
-        float cardH = 200.0f;
-        float gap = 20.0f;
-        float totalW = (static_cast<float>(count) * cardW) + (static_cast<float>(count - 1) * gap);
-        float startX = 765.0f - (totalW / 2.0f);
-        float startY = 260.0f;
-
-        currentOptions.reserve(count);
-
-        for (int i = 0; i < count; ++i) {
-            currentOptions.emplace_back(font, dummyTexture);
-            CardOption &card = currentOptions.back();
-            card.playerPtr = validCandidates[i]->clone();
-            Player &pRef = *card.playerPtr;
-
-            card.shape.setSize({cardW, cardH});
-            card.shape.setFillColor(sf::Color(40, 40, 40, 240));
-            card.shape.setOutlineColor(sf::Color::White);
-            card.shape.setOutlineThickness(2);
-            card.shape.setPosition({startX + i * (cardW + gap), startY});
-
-            if (!pRef.getImagePath().empty()) {
-                if (card.texture.loadFromFile(pRef.getImagePath())) {
-                    card.texture.setSmooth(true);
-                    card.sprite.setTexture(card.texture, true);
-                } else {
-                    card.sprite.setTexture(defaultCardTexture, true);
-                }
-            } else {
-                card.sprite.setTexture(defaultCardTexture, true);
-            }
-
-            sf::FloatRect bounds = card.sprite.getLocalBounds();
-            if (bounds.size.x > 0) {
-                float scaleX = (cardW - 10.0f) / bounds.size.x;
-                float scaleY = (cardH - 50.0f) / bounds.size.y;
-                float scale = min(scaleX, scaleY);
-                card.sprite.setScale({scale, scale});
-                card.sprite.setPosition({
-                    card.shape.getPosition().x + (cardW - bounds.size.x * scale) / 2.0f,
-                    card.shape.getPosition().y + 10.0f
-                });
-            }
-
-            card.nameText.setString(pRef.getName());
-            card.nameText.setCharacterSize(14);
-            sf::FloatRect tr = card.nameText.getLocalBounds();
-            card.nameText.setOrigin({tr.size.x / 2.0f, 0.0f});
-            card.nameText.setPosition({card.shape.getPosition().x + cardW / 2.0f, startY + cardH - 25.0f});
-
-            card.ratingText.setString(to_string(pRef.getRating()));
-            card.ratingText.setPosition({card.shape.getPosition().x + 5.0f, startY + 5.0f});
-        }
-    } else if (static_cast<size_t>(currentPositionIndex) < totalStarters + totalReserves) {
-        int resIdx = currentPositionIndex - static_cast<int>(totalStarters);
-        string dbGroup;
-
-        static std::random_device rd;
-        static std::mt19937 g(rd());
+        static random_device rd;
+        static mt19937 g(rd());
 
         if (resIdx == 0) {
             dbGroup = "GK";
@@ -326,170 +182,126 @@ void DraftSession::generateOptions() {
             uniform_int_distribution<> dist(0, 2);
             dbGroup = atts[dist(g)];
         }
+    }
+    else {
+        if (!choosingManager) { choosingManager = true; generateManagerOptions(); return; }
+        else { draftCompleted = true; return; }
+    }
 
-        const auto &allCandidates = db.getPlayersByPosition(dbGroup);
-        vector<Player *> validCandidates;
-        validCandidates.reserve(allCandidates.size());
+    const auto &all = db.getPlayersByPosition(dbGroup);
+    vector<Player*> valid;
+    for(const auto& u : all) if(!team.isPlayerInTeam(*u)) valid.push_back(u.get());
 
-        for (const auto &uPtr: allCandidates) {
-            if (!team.isPlayerInTeam(*uPtr)) {
-                validCandidates.push_back(uPtr.get());
+    static random_device rd; static mt19937 g(rd());
+    shuffle(valid.begin(), valid.end(), g);
+
+    int count = min((int)valid.size(), 5);
+    float startX = 765.0f - ((count * 140.0f + (count - 1) * 20.0f) / 2.0f);
+
+    for(int i=0; i<count; ++i) {
+        currentOptions.push_back(make_unique<CardOption>(font, dummyTexture));
+        auto &card = *currentOptions.back();
+
+        card.playerPtr = valid[i]->clone();
+
+        card.shape = UIFactory::createButton({140.0f, 200.0f}, sf::Color(40,40,40,240), {startX + i*160.0f, 260.0f});
+
+        bool loaded = false;
+        if(!card.playerPtr->getImagePath().empty()) {
+            if(card.texture.loadFromFile(card.playerPtr->getImagePath())) {
+                loaded = true;
             }
         }
 
-        std::shuffle(validCandidates.begin(), validCandidates.end(), g);
-
-        int count = min(static_cast<int>(validCandidates.size()), 5);
-
-        float cardW = 140.0f;
-        float cardH = 200.0f;
-        float gap = 20.0f;
-        float totalW = (static_cast<float>(count) * cardW) + (static_cast<float>(count - 1) * gap);
-        float startX = 765.0f - (totalW / 2.0f);
-        float startY = 260.0f;
-
-        currentOptions.reserve(count);
-
-        for (int i = 0; i < count; ++i) {
-            currentOptions.emplace_back(font, dummyTexture);
-            CardOption &card = currentOptions.back();
-            card.playerPtr = validCandidates[i]->clone();
-            Player &pRef = *card.playerPtr;
-
-            card.shape.setSize({cardW, cardH});
-            card.shape.setFillColor(sf::Color(50, 50, 70, 240));
-            card.shape.setOutlineColor(sf::Color::Cyan);
-            card.shape.setOutlineThickness(2);
-            card.shape.setPosition({startX + i * (cardW + gap), startY});
-
-            if (!pRef.getImagePath().empty()) {
-                if (card.texture.loadFromFile(pRef.getImagePath())) {
-                    card.texture.setSmooth(true);
-                    card.sprite.setTexture(card.texture, true);
-                } else {
-                    card.sprite.setTexture(defaultCardTexture, true);
-                }
-            } else {
-                card.sprite.setTexture(defaultCardTexture, true);
-            }
-
-            sf::FloatRect bounds = card.sprite.getLocalBounds();
-            if (bounds.size.x > 0) {
-                float scaleX = (cardW - 10.0f) / bounds.size.x;
-                float scaleY = (cardH - 50.0f) / bounds.size.y;
-                float scale = min(scaleX, scaleY);
-                card.sprite.setScale({scale, scale});
-                card.sprite.setPosition({
-                    card.shape.getPosition().x + (cardW - bounds.size.x * scale) / 2.0f,
-                    card.shape.getPosition().y + 10.0f
-                });
-            }
-
-            card.nameText.setString(pRef.getName());
-            card.nameText.setCharacterSize(14);
-            sf::FloatRect tr = card.nameText.getLocalBounds();
-            card.nameText.setOrigin({tr.size.x / 2.0f, 0.0f});
-            card.nameText.setPosition({card.shape.getPosition().x + cardW / 2.0f, startY + cardH - 25.0f});
-
-            card.ratingText.setString(to_string(pRef.getRating()));
-            card.ratingText.setPosition({card.shape.getPosition().x + 5.0f, startY + 5.0f});
-        }
-    } else {
-        if (!choosingManager) {
-            choosingManager = true;
-            generateManagerOptions();
+        if (loaded) {
+            card.sprite.setTexture(card.texture, true);
         } else {
-            draftCompleted = true;
+            card.sprite.setTexture(defaultCardTexture, true);
         }
+
+        sf::FloatRect b = card.sprite.getLocalBounds();
+        if (b.size.x > 0 && b.size.y > 0) {
+            float s = min(130.0f / b.size.x, 150.0f / b.size.y);
+            card.sprite.setScale({s, s});
+            card.sprite.setOrigin({b.size.x / 2.0f, b.size.y / 2.0f});
+            card.sprite.setPosition(card.shape.getPosition());
+        }
+
+        card.nameText = UIFactory::createText(font, card.playerPtr->getName(), 14, sf::Color::White, {card.shape.getPosition().x, card.shape.getPosition().y + 75});
+        card.ratingText = UIFactory::createText(font, to_string(card.playerPtr->getRating()), 14, sf::Color::Yellow, {card.shape.getPosition().x - 65, card.shape.getPosition().y - 95});
     }
 }
 
 void DraftSession::selectPlayer(int index) {
-    if (index < 0 || static_cast<size_t>(index) >= currentOptions.size()) return;
-    CardOption &choice = currentOptions[index];
+    if (index < 0 || index >= (int)currentOptions.size()) return;
+    auto &opt = *currentOptions[index];
 
-    if (choice.isManager) {
-        team.setManager(choice.manager);
-        cout << "Manager Ales: " << choice.manager.getName() << "\n";
+    if (opt.isManager) {
+        team.setManager(opt.manager);
 
-        const sf::Texture &texToCopy = (choice.texture.getSize().x > 0) ? choice.texture : defaultManagerTexture;
-
-        sidebarVisuals.push_back(make_unique<SelectedVisual>(font, texToCopy));
-        SelectedVisual &sv = *sidebarVisuals.back();
-
+        sf::Texture tex = (opt.texture.getSize().x > 0) ? opt.texture : defaultManagerTexture;
+        sidebarVisuals.push_back(make_unique<SelectedVisual>(font, tex));
+        auto &sv = *sidebarVisuals.back();
         sv.sprite.setTexture(sv.texture, true);
+        sv.sprite.setPosition({350.0f, 230.0f});
 
-        float sidebarCenterX = 350.0f;
-        float mY = 230.0f;
-
-        sv.sprite.setScale({0.9f, 0.9f});
         sf::FloatRect b = sv.sprite.getLocalBounds();
         sv.sprite.setOrigin({b.size.x / 2.0f, b.size.y / 2.0f});
-        sv.sprite.setPosition({sidebarCenterX, mY});
+        sv.sprite.setScale({0.8f, 0.8f});
 
-        sv.info.setString("Manager\n" + choice.manager.getNationality());
-        sv.info.setCharacterSize(16);
-        sv.info.setFillColor(sf::Color::Cyan);
+        sv.info.setString(opt.manager.getName());
+        sv.info.setCharacterSize(18);
+        sv.info.setFillColor(sf::Color::White);
+        sv.info.setOutlineColor(sf::Color::Black);
+        sv.info.setOutlineThickness(2);
 
         sf::FloatRect tr = sv.info.getLocalBounds();
         sv.info.setOrigin({tr.size.x / 2.0f, 0.0f});
-        sv.info.setPosition({sidebarCenterX, mY + 100.0f});
+        sv.info.setPosition({350.0f, 320.0f});
 
+        draftCompleted = true; choosingManager = false; currentOptions.clear();
         updateStatsUI();
-        draftCompleted = true;
-        choosingManager = false;
-        currentOptions.clear();
         return;
     }
 
-    size_t totalStarters = formation.getPositions().size();
+    if (opt.playerPtr) {
+        sf::Texture tex = (opt.texture.getSize().x > 0) ? opt.texture : defaultCardTexture;
 
-    if (choice.playerPtr) {
-        if (static_cast<size_t>(currentPositionIndex) < totalStarters) {
-            string posLabel = formation.getPositions()[currentPositionIndex];
-            team.addPlayer(posLabel, std::move(choice.playerPtr));
+        if (currentPositionIndex < (int)formation.getPositions().size()) {
+            team.addPlayer(formation.getPositions()[currentPositionIndex], std::move(opt.playerPtr));
 
-            const sf::Texture &tx = (choice.texture.getSize().x > 0) ? choice.texture : defaultCardTexture;
-
-            sidebarVisuals.push_back(make_unique<SelectedVisual>(font, tx));
-            SelectedVisual &sv = *sidebarVisuals.back();
+            sidebarVisuals.push_back(make_unique<SelectedVisual>(font, tex));
+            auto &sv = *sidebarVisuals.back();
             sv.sprite.setTexture(sv.texture, true);
+            sv.sprite.setPosition(formation.getCoordinates()[currentPositionIndex]);
 
-            sf::Vector2f pitchPos = formation.getCoordinates()[currentPositionIndex];
+            sf::FloatRect b = sv.sprite.getLocalBounds();
+            sv.sprite.setOrigin({b.size.x / 2.0f, b.size.y / 2.0f});
             sv.sprite.setScale({0.44f, 0.44f});
-            sf::FloatRect bounds = sv.sprite.getLocalBounds();
-            sv.sprite.setOrigin({bounds.size.x / 2.0f, bounds.size.y / 2.0f});
-            sv.sprite.setPosition(pitchPos);
 
-            sv.info.setString(posLabel);
-            sv.info.setCharacterSize(12);
+            sv.info.setString(formation.getPositions()[currentPositionIndex]);
+            sv.info.setCharacterSize(14);
             sv.info.setOutlineColor(sf::Color::Black);
-            sv.info.setOutlineThickness(1);
+            sv.info.setOutlineThickness(1.5f);
+
+            sf::Vector2f pos = sv.sprite.getPosition();
+            sv.info.setPosition({pos.x, pos.y + 60.0f});
+
         } else {
-            team.addReserve(std::move(choice.playerPtr));
+            team.addReserve(std::move(opt.playerPtr));
 
-            const sf::Texture &tx = (choice.texture.getSize().x > 0) ? choice.texture : defaultCardTexture;
-
-            reserveVisuals.push_back(make_unique<SelectedVisual>(font, tx));
-            SelectedVisual &sv = *reserveVisuals.back();
+            reserveVisuals.push_back(make_unique<SelectedVisual>(font, tex));
+            auto &sv = *reserveVisuals.back();
             sv.sprite.setTexture(sv.texture, true);
+            sv.sprite.setPosition({125.0f, 100.0f + (currentPositionIndex - (int)formation.getPositions().size()) * 85.0f});
 
-            int resIdx = currentPositionIndex - static_cast<int>(totalStarters);
-            float startY = 100.0f;
-            float gapY = 85.0f;
+            sf::FloatRect b = sv.sprite.getLocalBounds();
+            sv.sprite.setOrigin({b.size.x / 2.0f, b.size.y / 2.0f});
+            sv.sprite.setScale({0.3f, 0.3f});
 
-            sv.sprite.setScale({0.30f, 0.30f});
-            sf::FloatRect bounds = sv.sprite.getLocalBounds();
-            sv.sprite.setOrigin({bounds.size.x / 2.0f, bounds.size.y / 2.0f});
-            sv.sprite.setPosition({125.0f, startY + resIdx * gapY});
-
-            sv.info.setString(" ");
-            sv.info.setCharacterSize(12);
-            sv.info.setFillColor(sf::Color::White);
-            sv.info.setPosition({170.0f, startY + resIdx * gapY - 10.0f});
+            sv.info.setString("");
         }
     }
-
     updateStatsUI();
     currentPositionIndex++;
     generateOptions();
@@ -497,52 +309,83 @@ void DraftSession::selectPlayer(int index) {
 
 void DraftSession::updateStatsUI() {
     updateLinksVisuals();
-    int rating = static_cast<int>(team.computeRating());
-    int chem = team.computeChemistry();
-    int overall = static_cast<int>(team.computeOverall());
-
-    ratingDisplay.setString("RATING: " + to_string(rating));
-    chemistryDisplay.setString("CHEMISTRY: " + to_string(chem));
-    overallDisplay.setString("OVERALL: " + to_string(overall));
+    ratingDisplay.setString("RATING: " + to_string((int)team.computeRating()));
+    chemistryDisplay.setString("CHEMISTRY: " + to_string(team.computeChemistry()));
+    overallDisplay.setString("OVERALL: " + to_string((int)team.computeOverall()));
 
     const auto &positions = formation.getPositions();
-    const auto &coords = formation.getCoordinates();
 
     for (size_t i = 0; i < sidebarVisuals.size(); ++i) {
         if (i < positions.size()) {
             string posLabel = positions[i];
-            const Player *pPtr = team.getPlayerOnPosition(posLabel);
+            const Player* pPtr = team.getPlayerOnPosition(posLabel);
 
             if (pPtr) {
                 int indivChem = team.getPlayerChemistry(posLabel);
-                string infoText = posLabel + " " + "\nCh: " + to_string(indivChem);
+                string infoText = posLabel + "  Ch:" + to_string(indivChem);
 
                 sidebarVisuals[i]->info.setString(infoText);
+                sidebarVisuals[i]->info.setCharacterSize(14);
+                sidebarVisuals[i]->info.setScale({1.0f, 1.0f});
 
                 sf::FloatRect tr = sidebarVisuals[i]->info.getLocalBounds();
                 sidebarVisuals[i]->info.setOrigin({tr.size.x / 2.0f, 0.0f});
-                sidebarVisuals[i]->info.setPosition({coords[i].x, coords[i].y + 70.0f});
+
+
+                sf::Vector2f spritePos = sidebarVisuals[i]->sprite.getPosition();
+                sidebarVisuals[i]->info.setPosition({spritePos.x, spritePos.y + 60.0f});
 
                 if (indivChem == 10) sidebarVisuals[i]->info.setFillColor(sf::Color::Green);
                 else if (indivChem >= 7) sidebarVisuals[i]->info.setFillColor(sf::Color::Yellow);
                 else if (indivChem >= 4) sidebarVisuals[i]->info.setFillColor(sf::Color(255, 165, 0));
                 else sidebarVisuals[i]->info.setFillColor(sf::Color::Red);
+            } else {
+
+                sidebarVisuals[i]->info.setString(posLabel);
+                sidebarVisuals[i]->info.setFillColor(sf::Color::White);
+                sidebarVisuals[i]->info.setCharacterSize(14);
+                sf::FloatRect tr = sidebarVisuals[i]->info.getLocalBounds();
+                sidebarVisuals[i]->info.setOrigin({tr.size.x / 2.0f, 0.0f});
+
+                sf::Vector2f spritePos = sidebarVisuals[i]->sprite.getPosition();
+                sidebarVisuals[i]->info.setPosition({spritePos.x, spritePos.y + 60.0f});
             }
         }
     }
 
-    for (size_t i = 0; i < reserveVisuals.size(); ++i) {
-        const Player *res = team.getReserve(static_cast<int>(i));
-        if (res) {
-            reserveVisuals[i]->info.setString("");
+
+    for (auto& res : reserveVisuals) {
+        res->info.setString("");
+    }
+}
+
+void DraftSession::updateLinksVisuals() {
+    linkLines.clear();
+    const auto &links = formation.getLinks();
+    const auto &coords = formation.getCoordinates();
+    const auto &pos = formation.getPositions();
+
+    for (const auto &link : links) {
+        auto it1 = find(pos.begin(), pos.end(), link.first);
+        auto it2 = find(pos.begin(), pos.end(), link.second);
+        if (it1 != pos.end() && it2 != pos.end()) {
+            int i1 = distance(pos.begin(), it1);
+            int i2 = distance(pos.begin(), it2);
+
+            const Player* p1 = team.getPlayerOnPosition(link.first);
+            const Player* p2 = team.getPlayerOnPosition(link.second);
+            int val = (p1 && p2) ? p1->calcLink(*p2) : 0;
+
+            if (val == 3) linkLines.push_back(make_unique<GreenLink>(coords[i1], coords[i2]));
+            else if (val == 2) linkLines.push_back(make_unique<YellowLink>(coords[i1], coords[i2]));
+            else if (val == 1) linkLines.push_back(make_unique<OrangeLink>(coords[i1], coords[i2]));
+            else linkLines.push_back(make_unique<RedLink>(coords[i1], coords[i2]));
         }
     }
 }
 
-
 void DraftSession::handleSwapSelection(int index, bool isReserve) {
     int encodedIndex = isReserve ? (100 + index) : index;
-
 
     if (selectedSwapIndex == -1) {
         selectedSwapIndex = encodedIndex;
@@ -576,134 +419,160 @@ void DraftSession::handleSwapSelection(int index, bool isReserve) {
         if (!firstIsReserve && !isReserve) {
             string pos1 = formation.getPositions()[idx1];
             string pos2 = formation.getPositions()[idx2];
-
-
             team.swapPlayers(pos1, pos2);
 
-            std::swap(sidebarVisuals[idx1], sidebarVisuals[idx2]);
+            swap(sidebarVisuals[idx1], sidebarVisuals[idx2]);
 
             sidebarVisuals[idx1]->sprite.setPosition(formation.getCoordinates()[idx1]);
             sidebarVisuals[idx2]->sprite.setPosition(formation.getCoordinates()[idx2]);
+
         } else if (!firstIsReserve && isReserve) {
             string pos = formation.getPositions()[idx1];
-
             team.swapStarterWithReserve(pos, idx2);
 
-
-            std::swap(sidebarVisuals[idx1], reserveVisuals[idx2]);
+            swap(sidebarVisuals[idx1], reserveVisuals[idx2]);
 
             sidebarVisuals[idx1]->sprite.setPosition(formation.getCoordinates()[idx1]);
-
-
-            float startY = 100.0f;
-            float gapY = 85.0f;
+            float startY = 100.0f; float gapY = 85.0f;
             reserveVisuals[idx2]->sprite.setPosition({125.0f, startY + idx2 * gapY});
+
         } else if (firstIsReserve && !isReserve) {
             string pos = formation.getPositions()[idx2];
-
             team.swapStarterWithReserve(pos, idx1);
 
-            std::swap(reserveVisuals[idx1], sidebarVisuals[idx2]);
-
+            swap(reserveVisuals[idx1], sidebarVisuals[idx2]);
 
             sidebarVisuals[idx2]->sprite.setPosition(formation.getCoordinates()[idx2]);
-
-            float startY = 100.0f;
-            float gapY = 85.0f;
+            float startY = 100.0f; float gapY = 85.0f;
             reserveVisuals[idx1]->sprite.setPosition({125.0f, startY + idx1 * gapY});
+
         } else {
             team.swapReserves(idx1, idx2);
+            swap(reserveVisuals[idx1], reserveVisuals[idx2]);
 
-            std::swap(reserveVisuals[idx1], reserveVisuals[idx2]);
-
-            float startY = 100.0f;
-            float gapY = 85.0f;
+            float startY = 100.0f; float gapY = 85.0f;
             reserveVisuals[idx1]->sprite.setPosition({125.0f, startY + idx1 * gapY});
             reserveVisuals[idx2]->sprite.setPosition({125.0f, startY + idx2 * gapY});
         }
-
         updateStatsUI();
     } catch (const GameException &e) {
         cerr << "SWAP BLOCAT: " << e.what() << endl;
     }
 
     for (size_t k = 0; k < sidebarVisuals.size(); ++k) {
-        if (k >= formation.getPositions().size()) {
-            sidebarVisuals[k]->sprite.setScale({0.9f, 0.9f});
-        } else {
-            sidebarVisuals[k]->sprite.setScale({0.44f, 0.44f});
-        }
+        if (k >= formation.getPositions().size()) sidebarVisuals[k]->sprite.setScale({0.9f, 0.9f});
+        else sidebarVisuals[k]->sprite.setScale({0.44f, 0.44f});
         sidebarVisuals[k]->sprite.setColor(sf::Color::White);
     }
-
     for (const auto &rv: reserveVisuals) {
         rv->sprite.setScale({0.30f, 0.30f});
         rv->sprite.setColor(sf::Color::White);
     }
-
     selectedSwapIndex = -1;
 }
 
 void DraftSession::handleInput() {
-    while (const std::optional event = window.pollEvent()) {
+    while (const auto event = window.pollEvent()) {
         if (event->is<sf::Event::Closed>()) {
             window.close();
             isDrafting = false;
-        } else if (const auto *kp = event->getIf<sf::Event::KeyPressed>()) {
-            if (kp->code == sf::Keyboard::Key::Escape) {
-                if (selectedSwapIndex != -1) {
-                    bool isRes = (selectedSwapIndex >= 100);
-                    int idx = isRes ? (selectedSwapIndex - 100) : selectedSwapIndex;
-
-                    if (isRes) {
-                        reserveVisuals[idx]->sprite.setScale({0.30f, 0.30f});
-                        reserveVisuals[idx]->sprite.setColor(sf::Color::White);
-                    } else {
-                        if (static_cast<size_t>(idx) >= formation.getPositions().size())
-                            sidebarVisuals[idx]->sprite.setScale({0.9f, 0.9f});
-                        else sidebarVisuals[idx]->sprite.setScale({0.44f, 0.44f});
-
-                        sidebarVisuals[idx]->sprite.setColor(sf::Color::White);
-                    }
-                    selectedSwapIndex = -1;
-                } else {
-                    isDrafting = false;
-                }
-            }
-        } else if (const auto *mp = event->getIf<sf::Event::MouseButtonPressed>()) {
+        }
+        else if (const auto* kp = event->getIf<sf::Event::KeyPressed>()) {
+             if (kp->code == sf::Keyboard::Key::Escape) {
+                 if (selectedSwapIndex != -1) {
+                     bool isRes = (selectedSwapIndex >= 100);
+                     int idx = isRes ? (selectedSwapIndex - 100) : selectedSwapIndex;
+                     if(isRes) reserveVisuals[idx]->sprite.setColor(sf::Color::White);
+                     else sidebarVisuals[idx]->sprite.setColor(sf::Color::White);
+                     selectedSwapIndex = -1;
+                 } else {
+                     isDrafting = false;
+                 }
+             }
+        }
+        else if (const auto* mp = event->getIf<sf::Event::MouseButtonPressed>()) {
             if (mp->button == sf::Mouse::Button::Left) {
                 sf::Vector2f mPos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
 
+                if (state == DraftState::SUMMARY) {
+                    isDrafting = false;
+                    return;
+                }
+
+                if (draftCompleted && finishButton.getGlobalBounds().contains(mPos)) {
+                    state = DraftState::SUMMARY;
+                    globalStats.addEntry((int)team.computeOverall());
+                    return;
+                }
+
                 if (!draftCompleted) {
-                    bool clickedOption = false;
-                    for (size_t i = 0; i < currentOptions.size(); ++i) {
-                        if (currentOptions[i].shape.getGlobalBounds().contains(mPos)) {
-                            selectPlayer(static_cast<int>(i));
-                            clickedOption = true;
-                            break;
+                    for(int i=0; i<(int)currentOptions.size(); ++i) {
+                        if (currentOptions[i]->shape.getGlobalBounds().contains(mPos)) {
+                            selectPlayer(i); return;
                         }
                     }
-                    if (clickedOption) continue;
                 }
 
-                for (size_t i = 0; i < sidebarVisuals.size(); ++i) {
-                    if (i >= formation.getPositions().size()) continue;
-
-                    if (sidebarVisuals[i]->sprite.getGlobalBounds().contains(mPos)) {
-                        handleSwapSelection(static_cast<int>(i), false);
-                        goto end_click;
+                for(int i=0; i<(int)sidebarVisuals.size(); ++i) {
+                    if(i < (int)formation.getPositions().size() && sidebarVisuals[i]->sprite.getGlobalBounds().contains(mPos)) {
+                        handleSwapSelection(i, false); return;
                     }
                 }
-                for (size_t i = 0; i < reserveVisuals.size(); ++i) {
-                    if (reserveVisuals[i]->sprite.getGlobalBounds().contains(mPos)) {
-                        handleSwapSelection(static_cast<int>(i), true);
-                        goto end_click;
+                for(int i=0; i<(int)reserveVisuals.size(); ++i) {
+                    if(reserveVisuals[i]->sprite.getGlobalBounds().contains(mPos)) {
+                        handleSwapSelection(i, true); return;
                     }
                 }
-            end_click:;
             }
         }
     }
+}
+
+void DraftSession::drawSummary() {
+    window.clear(sf::Color(10, 10, 30));
+
+    sf::Text title = UIFactory::createText(font, "DRAFT COMPLETE!", 50, sf::Color(255, 215, 0), {640, 100});
+    sf::Text score = UIFactory::createText(font, "Final Overall: " + to_string((int)team.computeOverall()), 40, sf::Color::White, {640, 200});
+    sf::Text exitMsg = UIFactory::createText(font, "Click anywhere to return to Menu", 20, sf::Color::Cyan, {640, 650});
+
+    window.draw(title);
+    window.draw(score);
+    window.draw(exitMsg);
+}
+
+void DraftSession::draw() {
+    if (state == DraftState::SUMMARY) {
+        drawSummary();
+        window.display();
+        return;
+    }
+
+    window.clear(sf::Color(20, 20, 20));
+    window.draw(backgroundSprite);
+    window.draw(sidebar);
+
+    for(const auto& l : linkLines) l->draw(window);
+    for(const auto& s : sidebarVisuals) { window.draw(s->sprite); window.draw(s->info); }
+    for(const auto& r : reserveVisuals) { window.draw(r->sprite); window.draw(r->info); }
+
+    window.draw(statsBackground);
+    window.draw(ratingDisplay);
+    window.draw(chemistryDisplay);
+    window.draw(overallDisplay);
+
+    if (draftCompleted) {
+        window.draw(finishButton);
+        window.draw(finishText);
+    } else {
+        for(const auto& opt : currentOptions) {
+            window.draw(opt->shape);
+            window.draw(opt->sprite);
+            window.draw(opt->nameText);
+            window.draw(opt->ratingText);
+        }
+    }
+
+    window.display();
 }
 
 void DraftSession::run() {
@@ -711,115 +580,4 @@ void DraftSession::run() {
         handleInput();
         draw();
     }
-}
-
-void DraftSession::draw() {
-    window.clear(sf::Color(20, 20, 20));
-    window.draw(backgroundSprite);
-    window.draw(sidebar);
-
-    for (const auto &link: linkLines) {
-        link->draw(window);
-    }
-
-    for (const auto &item: sidebarVisuals) {
-        window.draw(item->sprite);
-        window.draw(item->info);
-    }
-    for (const auto &item: reserveVisuals) {
-        window.draw(item->sprite);
-        window.draw(item->info);
-    }
-
-    window.draw(statsBackground);
-    window.draw(ratingDisplay);
-    window.draw(chemistryDisplay);
-    window.draw(overallDisplay);
-    if (!draftCompleted) {
-        string titleText;
-        if (choosingManager) {
-            titleText = "Alege Managerul";
-        } else {
-            if (static_cast<size_t>(currentPositionIndex) < formation.getPositions().size()) {
-                titleText = "Alege: " + formation.getPositions()[currentPositionIndex];
-            } else {
-                titleText = "Alege rezerva";
-            }
-        }
-
-        sf::Text pickText(font, titleText, 30);
-
-        pickText.setOutlineColor(sf::Color::Black);
-        pickText.setOutlineThickness(2);
-
-        sf::FloatRect tr = pickText.getLocalBounds();
-        pickText.setOrigin({tr.size.x / 2.0f, 0.0f});
-        pickText.setPosition({765.0f, 50.0f});
-        window.draw(pickText);
-
-        sf::Vector2f mPos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
-        bool showPreview = false;
-
-        if (!currentOptions.empty()) {
-            sf::RectangleShape overlayBar({1280.0f, 250.0f});
-            overlayBar.setFillColor(sf::Color(0, 0, 0, 150));
-            overlayBar.setPosition({0.0f, 240.0f});
-            window.draw(overlayBar);
-        }
-
-        for (auto &opt: currentOptions) {
-            if (opt.shape.getGlobalBounds().contains(mPos)) {
-                opt.shape.setOutlineColor(sf::Color::Yellow);
-
-                if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Right)) {
-                    showPreview = true;
-
-                    const sf::Texture *fallbackTexture = &defaultCardTexture;
-                    if (opt.isManager) {
-                        fallbackTexture = &defaultManagerTexture;
-                    }
-
-                    const sf::Texture &textureToShow = (opt.texture.getSize().x > 0) ? opt.texture : *fallbackTexture;
-
-                    previewSprite.setTexture(textureToShow, true);
-
-                    sf::FloatRect bounds = previewSprite.getLocalBounds();
-                    previewSprite.setOrigin({bounds.size.x / 2.0f, bounds.size.y / 2.0f});
-                    previewSprite.setPosition({765.0f, 360.0f});
-
-                    if (textureToShow.getSize().x < 200) {
-                        previewSprite.setScale({3.0f, 3.0f});
-                    } else {
-                        previewSprite.setScale({1.0f, 1.0f});
-                    }
-                }
-            } else {
-                opt.shape.setOutlineColor(sf::Color::White);
-            }
-
-            window.draw(opt.shape);
-            window.draw(opt.sprite);
-            window.draw(opt.nameText);
-            window.draw(opt.ratingText);
-        }
-
-        if (showPreview) {
-            sf::RectangleShape overlay({1280.0f, 720.0f});
-            overlay.setFillColor(sf::Color(0, 0, 0, 200));
-            window.draw(overlay);
-            window.draw(previewSprite);
-        }
-    } else {
-        sf::Text doneText(font, "ECHIPA COMPLETA", 30);
-        doneText.setFillColor(sf::Color::Green);
-        doneText.setOutlineColor(sf::Color::Black);
-        doneText.setOutlineThickness(2);
-
-        sf::FloatRect dBounds = doneText.getLocalBounds();
-        doneText.setOrigin({dBounds.size.x, dBounds.size.y});
-        doneText.setPosition({1260.0f, 700.0f});
-        window.draw(doneText);
-    }
-
-    window.display();
 }

@@ -75,6 +75,11 @@ add_executable(${MAIN_EXECUTABLE_NAME}
         Exception.h
         ChemistryLink.cpp
         ChemistryLink.h
+        SessionStats.h
+        UIFactory.cpp
+        UIFactory.h
+        GameApp.cpp
+        GameApp.h
 )
 
 # NOTE: Add all defined targets (e.g. executables, libraries, etc. )

@@ -8,6 +8,14 @@
 #include "Database.h"
 #include "ChemistryLink.h"
 #include <memory>
+#include "SessionStats.h"
+
+enum class DraftState {
+    DRAFTING,
+    CHOOSING_MANAGER,
+    FINISHED,
+    SUMMARY
+};
 
 struct CardOption {
     sf::RectangleShape shape;
@@ -23,6 +31,9 @@ struct CardOption {
     CardOption(const sf::Font &font, const sf::Texture &dummyTex)
         : sprite(dummyTex), nameText(font), ratingText(font), isManager(false) {
     }
+
+    CardOption(const CardOption&) = delete;
+    CardOption& operator=(const CardOption&) = delete;
 };
 
 
@@ -30,7 +41,6 @@ struct SelectedVisual {
     sf::Texture texture;
     sf::Sprite sprite;
     sf::Text info;
-
 
     SelectedVisual(const sf::Font &font, sf::Texture texCopy)
         : texture(std::move(texCopy)),
@@ -45,6 +55,8 @@ class DraftSession {
     Database db;
     std::map<std::string, std::string> positionMap;
 
+    DraftState state;
+    SessionStats<int>& globalStats;
 
     sf::RenderWindow &window;
     sf::Font font;
@@ -60,12 +72,13 @@ class DraftSession {
     sf::Text overallDisplay;
     sf::RectangleShape statsBackground;
 
-
     int currentPositionIndex;
     bool isDrafting;
     bool draftCompleted;
     bool choosingManager;
-    std::vector<CardOption> currentOptions;
+
+
+    std::vector<std::unique_ptr<CardOption>> currentOptions;
 
     std::vector<std::unique_ptr<SelectedVisual> > sidebarVisuals;
     std::vector<std::unique_ptr<SelectedVisual> > reserveVisuals;
@@ -74,8 +87,11 @@ class DraftSession {
     int selectedSwapIndex;
     std::vector<std::unique_ptr<ChemistryLink> > linkLines;
 
+    sf::RectangleShape finishButton;
+    sf::Text finishText;
+
 public:
-    DraftSession(sf::RenderWindow &win, const Formation &f);
+    DraftSession(sf::RenderWindow &win, const Formation &f, SessionStats<int>& stats);
 
     ~DraftSession() = default;
 
@@ -99,4 +115,9 @@ private:
     void updateLinksVisuals();
 
     void handleSwapSelection(int index, bool isReserve);
+
+    void drawSidebar();
+    void drawField();
+    void drawOverlay();
+    void drawSummary();
 };
