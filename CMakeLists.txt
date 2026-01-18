@@ -82,6 +82,8 @@ add_executable(${MAIN_EXECUTABLE_NAME}
         GameApp.h
         Logger.cpp
         Logger.h
+        MatchSystem.cpp
+        MatchSystem.h
 )
 
 # NOTE: Add all defined targets (e.g. executables, libraries, etc. )

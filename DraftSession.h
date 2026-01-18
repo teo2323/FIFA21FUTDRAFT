@@ -9,12 +9,14 @@
 #include "ChemistryLink.h"
 #include <memory>
 #include "SessionStats.h"
+#include "MatchSystem.h"
 
 enum class DraftState {
     DRAFTING,
     CHOOSING_MANAGER,
     FINISHED,
-    SUMMARY
+    SUMMARY,
+    SIMULATION
 };
 
 struct CardOption {
@@ -89,6 +91,9 @@ class DraftSession {
 
     sf::RectangleShape finishButton;
     sf::Text finishText;
+    std::unique_ptr<MatchSystem> matchSystem;
+    sf::RectangleShape playMatchButton;
+    sf::Text playMatchText;
 
 public:
     DraftSession(sf::RenderWindow &win, const Formation &f, SessionStats<int>& stats);

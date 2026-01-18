@@ -1,13 +1,14 @@
 #include "DraftSession.h"
 #include "UIFactory.h"
 #include "Exception.h"
+#include "Logger.h"
 #include <algorithm>
 #include <random>
 #include <iostream>
 #include <optional>
 #include <iomanip>
 #include <sstream>
-#include "Logger.h"
+
 using namespace std;
 
 DraftSession::DraftSession(sf::RenderWindow &win, const Formation &f, SessionStats<int>& stats)
@@ -45,7 +46,9 @@ DraftSession::DraftSession(sf::RenderWindow &win, const Formation &f, SessionSta
       selectedSwapIndex(-1),
       linkLines(),
       finishButton({200.0f, 50.0f}),
-      finishText(font)
+      finishText(font),
+      playMatchButton({250.0f, 60.0f}),
+      playMatchText(font)
 {
     sidebarVisuals.reserve(12);
     reserveVisuals.reserve(7);
@@ -56,10 +59,18 @@ DraftSession::DraftSession(sf::RenderWindow &win, const Formation &f, SessionSta
     loadResources();
     generateOptions();
 
+
     finishButton = UIFactory::createButton({200.0f, 50.0f}, sf::Color::Green, {1150.0f, 650.0f});
     finishText = UIFactory::createText(font, "FINISH", 24, sf::Color::Black, {1150.0f, 650.0f});
-
     UIFactory::centerOrigin(finishText);
+
+
+    playMatchButton = UIFactory::createButton({280.0f, 60.0f}, sf::Color(200, 50, 50), {640.0f, 400.0f});
+    playMatchButton.setOutlineColor(sf::Color::White);
+    playMatchButton.setOutlineThickness(2.0f);
+
+    playMatchText = UIFactory::createText(font, "SIMULATE MATCH", 24, sf::Color::White, {640.0f, 400.0f});
+    UIFactory::centerOrigin(playMatchText);
 }
 
 void DraftSession::loadResources() {
@@ -95,6 +106,7 @@ void DraftSession::loadResources() {
         if(!defaultManagerTexture.resize({100, 100})) {}
     }
     defaultManagerTexture.setSmooth(true);
+
 
     statsBackground = UIFactory::createButton({260.0f, 120.0f}, sf::Color(0, 0, 0, 200), {365.f, 75.f});
     statsBackground.setOutlineColor(sf::Color::White);
@@ -165,16 +177,26 @@ void DraftSession::generateOptions() {
         dbGroup = positionMap[pos[currentPositionIndex]];
     }
     else if (currentPositionIndex < (int)totalPlayers) {
+
         int resIdx = currentPositionIndex - (int)starters;
+
+        static random_device rd;
+        static mt19937 g(rd());
 
         if (resIdx == 0) {
             dbGroup = "GK";
         } else if (resIdx == 1 || resIdx == 2) {
-            dbGroup = "CB";
+            vector<string> defs = {"CB", "LB", "RB"};
+            uniform_int_distribution<> dist(0, 2);
+            dbGroup = defs[dist(g)];
         } else if (resIdx == 3 || resIdx == 4) {
-            dbGroup = "CM";
+            vector<string> mids = {"CM", "LM", "RM"};
+            uniform_int_distribution<> dist(0, 2);
+            dbGroup = mids[dist(g)];
         } else {
-            dbGroup = "ST";
+            vector<string> atts = {"ST", "LW", "RW"};
+            uniform_int_distribution<> dist(0, 2);
+            dbGroup = atts[dist(g)];
         }
     }
     else {
@@ -345,7 +367,7 @@ void DraftSession::updateStatsUI() {
         }
     }
 
-    for (const auto& res : reserveVisuals) {
+    for (auto& res : reserveVisuals) {
         res->info.setString("");
     }
 }
@@ -486,7 +508,25 @@ void DraftSession::handleInput() {
                 sf::Vector2f mPos = window.mapPixelToCoords(sf::Mouse::getPosition(window));
 
                 if (state == DraftState::SUMMARY) {
-                    isDrafting = false;
+
+                    if (playMatchButton.getGlobalBounds().contains(mPos)) {
+                        state = DraftState::SIMULATION;
+                        matchSystem = make_unique<MatchSystem>(font, (int)team.computeOverall());
+                        matchSystem->startMatch();
+                        return;
+                    }
+
+
+                    if (!playMatchButton.getGlobalBounds().contains(mPos)) {
+                        isDrafting = false;
+                        return;
+                    }
+                }
+
+                if (state == DraftState::SIMULATION) {
+                    if (matchSystem && matchSystem->isFinished()) {
+                        isDrafting = false;
+                    }
                     return;
                 }
 
@@ -520,13 +560,10 @@ void DraftSession::handleInput() {
 }
 
 void DraftSession::drawSummary() {
-
     static bool logged = false;
     if (!logged) {
         string logMsg = "Draft Finished. Final Score: " + to_string((int)team.computeOverall());
         Logger::getInstance().log(logMsg);
-
-        cout << "[Logger] " << logMsg << endl;
         logged = true;
     }
 
@@ -534,27 +571,42 @@ void DraftSession::drawSummary() {
 
     sf::Text title = UIFactory::createText(font, "DRAFT COMPLETE!", 50, sf::Color(255, 215, 0), {640, 100});
     UIFactory::centerOrigin(title);
+
     sf::Text score = UIFactory::createText(font, "Final Overall: " + to_string((int)team.computeOverall()), 40, sf::Color::White, {640, 200});
+    UIFactory::centerOrigin(score);
 
 
-    std::stringstream ss;
-    ss << fixed << setprecision(1) << globalStats.getAverage();
+    window.draw(playMatchButton);
+    window.draw(playMatchText);
 
-    sf::Text statsText = UIFactory::createText(font,
-        "Session Avg: " + ss.str() + " | Drafts Played: " + to_string(globalStats.getHistory().size()),
-        28, sf::Color::Yellow, {640, 300});
-
-    sf::Text exitMsg = UIFactory::createText(font, "Click anywhere to return to Menu", 20, sf::Color::Cyan, {640, 650});
+    sf::Text exitMsg = UIFactory::createText(font, "Click outside button to return to Menu", 20, sf::Color::Cyan, {640, 650});
+    UIFactory::centerOrigin(exitMsg);
 
     window.draw(title);
     window.draw(score);
-    window.draw(statsText);
     window.draw(exitMsg);
 }
 
 void DraftSession::draw() {
     if (state == DraftState::SUMMARY) {
         drawSummary();
+        window.display();
+        return;
+    }
+
+    if (state == DraftState::SIMULATION) {
+        window.clear(sf::Color(10, 30, 10));
+        if (matchSystem) {
+            matchSystem->update();
+            matchSystem->draw(window);
+        }
+
+        if (matchSystem && matchSystem->isFinished()) {
+             sf::Text over = UIFactory::createText(font, "Click to Exit", 20, sf::Color::White, {640, 600});
+             UIFactory::centerOrigin(over);
+             window.draw(over);
+        }
+
         window.display();
         return;
     }
