@@ -59,11 +59,9 @@ DraftSession::DraftSession(sf::RenderWindow &win, const Formation &f, SessionSta
     loadResources();
     generateOptions();
 
-
     finishButton = UIFactory::createButton({200.0f, 50.0f}, sf::Color::Green, {1150.0f, 650.0f});
     finishText = UIFactory::createText(font, "FINISH", 24, sf::Color::Black, {1150.0f, 650.0f});
     UIFactory::centerOrigin(finishText);
-
 
     playMatchButton = UIFactory::createButton({280.0f, 60.0f}, sf::Color(200, 50, 50), {640.0f, 400.0f});
     playMatchButton.setOutlineColor(sf::Color::White);
@@ -177,7 +175,6 @@ void DraftSession::generateOptions() {
         dbGroup = positionMap[pos[currentPositionIndex]];
     }
     else if (currentPositionIndex < (int)totalPlayers) {
-
         int resIdx = currentPositionIndex - (int)starters;
 
         static random_device rd;
@@ -576,6 +573,14 @@ void DraftSession::drawSummary() {
     UIFactory::centerOrigin(score);
 
 
+    std::stringstream ss;
+    ss << fixed << setprecision(1) << globalStats.getAverage();
+
+    sf::Text statsText = UIFactory::createText(font,
+        "Session Avg: " + ss.str() + " | Drafts Played: " + to_string(globalStats.getHistory().size()),
+        28, sf::Color::Yellow, {640, 300});
+    UIFactory::centerOrigin(statsText);
+
     window.draw(playMatchButton);
     window.draw(playMatchText);
 
@@ -584,6 +589,7 @@ void DraftSession::drawSummary() {
 
     window.draw(title);
     window.draw(score);
+    window.draw(statsText);
     window.draw(exitMsg);
 }
 
