@@ -26,11 +26,12 @@ struct MenuButton {
     sf::Text label;
     std::string formationName;
 
-
     MenuButton(const sf::Font &font, string name, float x, float y)
-        : label(font), formationName(std::move(name)) {
-        shape = UIFactory::createButton({180.0f, 60.0f}, sf::Color(50, 150, 50), {x, y});
-        label = UIFactory::createText(font, formationName, 24, sf::Color::White, {x, y});
+        : shape(UIFactory::createButton({180.0f, 60.0f}, sf::Color(50, 150, 50), {x, y})),
+          label(UIFactory::createText(font, name, 24, sf::Color::White, {x, y})),
+          formationName(std::move(name)) {
+
+          label.setString(formationName);
     }
 };
 
@@ -64,7 +65,6 @@ void GameApp::run() {
     sf::Text subtitle = UIFactory::createText(font, "Click Left: Select | Hold Right: Preview", 20, sf::Color(200, 200, 200), {640, 100});
 
     sf::Texture dummyTex;
-
     (void)dummyTex.resize({1, 1});
     sf::Sprite previewSprite(dummyTex);
 

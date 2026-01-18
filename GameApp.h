@@ -8,7 +8,6 @@ class GameApp {
     SessionStats<int> scoreStats;
     SessionStats<double> ratingStats;
 
-
     GameApp();
 
 public:
@@ -17,7 +16,4 @@ public:
     void operator=(const GameApp&) = delete;
 
     void run();
-
-
-    void addScore(int overall) { scoreStats.addEntry(overall); }
 };

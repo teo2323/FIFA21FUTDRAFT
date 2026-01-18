@@ -5,6 +5,8 @@
 #include <random>
 #include <iostream>
 #include <optional>
+#include <iomanip>
+#include <sstream>
 
 using namespace std;
 
@@ -56,6 +58,7 @@ DraftSession::DraftSession(sf::RenderWindow &win, const Formation &f, SessionSta
 
     finishButton = UIFactory::createButton({200.0f, 50.0f}, sf::Color::Green, {1150.0f, 650.0f});
     finishText = UIFactory::createText(font, "FINISH", 24, sf::Color::Black, {1150.0f, 650.0f});
+
     UIFactory::centerOrigin(finishText);
 }
 
@@ -164,23 +167,14 @@ void DraftSession::generateOptions() {
     else if (currentPositionIndex < (int)totalPlayers) {
         int resIdx = currentPositionIndex - (int)starters;
 
-        static random_device rd;
-        static mt19937 g(rd());
-
         if (resIdx == 0) {
             dbGroup = "GK";
         } else if (resIdx == 1 || resIdx == 2) {
-            vector<string> defs = {"CB", "LB", "RB"};
-            uniform_int_distribution<> dist(0, 2);
-            dbGroup = defs[dist(g)];
+            dbGroup = "CB";
         } else if (resIdx == 3 || resIdx == 4) {
-            vector<string> mids = {"CM", "LM", "RM"};
-            uniform_int_distribution<> dist(0, 2);
-            dbGroup = mids[dist(g)];
+            dbGroup = "CM";
         } else {
-            vector<string> atts = {"ST", "LW", "RW"};
-            uniform_int_distribution<> dist(0, 2);
-            dbGroup = atts[dist(g)];
+            dbGroup = "ST";
         }
     }
     else {
@@ -331,7 +325,6 @@ void DraftSession::updateStatsUI() {
                 sf::FloatRect tr = sidebarVisuals[i]->info.getLocalBounds();
                 sidebarVisuals[i]->info.setOrigin({tr.size.x / 2.0f, 0.0f});
 
-
                 sf::Vector2f spritePos = sidebarVisuals[i]->sprite.getPosition();
                 sidebarVisuals[i]->info.setPosition({spritePos.x, spritePos.y + 60.0f});
 
@@ -340,7 +333,6 @@ void DraftSession::updateStatsUI() {
                 else if (indivChem >= 4) sidebarVisuals[i]->info.setFillColor(sf::Color(255, 165, 0));
                 else sidebarVisuals[i]->info.setFillColor(sf::Color::Red);
             } else {
-
                 sidebarVisuals[i]->info.setString(posLabel);
                 sidebarVisuals[i]->info.setFillColor(sf::Color::White);
                 sidebarVisuals[i]->info.setCharacterSize(14);
@@ -352,7 +344,6 @@ void DraftSession::updateStatsUI() {
             }
         }
     }
-
 
     for (auto& res : reserveVisuals) {
         res->info.setString("");
@@ -532,11 +523,22 @@ void DraftSession::drawSummary() {
     window.clear(sf::Color(10, 10, 30));
 
     sf::Text title = UIFactory::createText(font, "DRAFT COMPLETE!", 50, sf::Color(255, 215, 0), {640, 100});
+
     sf::Text score = UIFactory::createText(font, "Final Overall: " + to_string((int)team.computeOverall()), 40, sf::Color::White, {640, 200});
+
+
+    std::stringstream ss;
+    ss << fixed << setprecision(1) << globalStats.getAverage();
+
+    sf::Text statsText = UIFactory::createText(font,
+        "Session Avg: " + ss.str() + " | Drafts Played: " + to_string(globalStats.getHistory().size()),
+        28, sf::Color::Yellow, {640, 300});
+
     sf::Text exitMsg = UIFactory::createText(font, "Click anywhere to return to Menu", 20, sf::Color::Cyan, {640, 650});
 
     window.draw(title);
     window.draw(score);
+    window.draw(statsText);
     window.draw(exitMsg);
 }
 
