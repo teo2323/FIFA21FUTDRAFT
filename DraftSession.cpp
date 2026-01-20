@@ -69,6 +69,7 @@ DraftSession::DraftSession(sf::RenderWindow &win, const Formation &f, SessionSta
 
     playMatchText = UIFactory::createText(font, "SIMULATE MATCH", 24, sf::Color::White, {640.0f, 400.0f});
     UIFactory::centerOrigin(playMatchText);
+    analysisSystem = make_unique<AnalysisSystem>(font);
 }
 
 void DraftSession::loadResources() {
@@ -561,6 +562,9 @@ void DraftSession::drawSummary() {
     if (!logged) {
         string logMsg = "Draft Finished. Final Score: " + to_string((int)team.computeOverall());
         Logger::getInstance().log(logMsg);
+        if (analysisSystem) {
+            analysisSystem->analyzeTeam(team, formation);
+        }
         logged = true;
     }
 
@@ -580,6 +584,10 @@ void DraftSession::drawSummary() {
         "Session Avg: " + ss.str() + " | Drafts Played: " + to_string(globalStats.getHistory().size()),
         28, sf::Color::Yellow, {640, 300});
     UIFactory::centerOrigin(statsText);
+
+    if (analysisSystem) {
+        analysisSystem->draw(window);
+    }
 
     window.draw(playMatchButton);
     window.draw(playMatchText);

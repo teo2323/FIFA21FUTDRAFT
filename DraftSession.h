@@ -10,6 +10,8 @@
 #include <memory>
 #include "SessionStats.h"
 #include "MatchSystem.h"
+#include "AnalysisSystem.h"
+
 
 enum class DraftState {
     DRAFTING,
@@ -94,6 +96,7 @@ class DraftSession {
     std::unique_ptr<MatchSystem> matchSystem;
     sf::RectangleShape playMatchButton;
     sf::Text playMatchText;
+    std::unique_ptr<AnalysisSystem> analysisSystem;
 
 public:
     DraftSession(sf::RenderWindow &win, const Formation &f, SessionStats<int>& stats);
