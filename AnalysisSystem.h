@@ -24,8 +24,10 @@ class AnalysisSystem {
     std::vector<sf::Text> achievementTexts;
 
 public:
-    AnalysisSystem(sf::Font& f);
+    explicit AnalysisSystem(sf::Font& f);
 
+    AnalysisSystem(const AnalysisSystem&) = delete;
+    AnalysisSystem& operator=(const AnalysisSystem&) = delete;
     void analyzeTeam(const Team& team, const Formation& fmt);
     void draw(sf::RenderWindow& window);
 
