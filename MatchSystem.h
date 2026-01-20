@@ -40,6 +40,8 @@ public:
     void update();
     void draw(sf::RenderWindow& window);
     bool isFinished() const;
+    int getUserScore() const { return userScore; }
+    int getOpponentScore() const { return opponentScore; }
 
 private:
     void generateOpponent();

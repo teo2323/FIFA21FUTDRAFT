@@ -11,7 +11,7 @@
 #include "SessionStats.h"
 #include "MatchSystem.h"
 #include "AnalysisSystem.h"
-
+#include "SoundManager.h"
 
 enum class DraftState {
     DRAFTING,
@@ -97,7 +97,8 @@ class DraftSession {
     sf::RectangleShape playMatchButton;
     sf::Text playMatchText;
     std::unique_ptr<AnalysisSystem> analysisSystem;
-
+    bool summaryProcessed;
+    bool soundPlayed;
 public:
     DraftSession(sf::RenderWindow &win, const Formation &f, SessionStats<int>& stats);
 

@@ -48,7 +48,9 @@ DraftSession::DraftSession(sf::RenderWindow &win, const Formation &f, SessionSta
       finishButton({200.0f, 50.0f}),
       finishText(font),
       playMatchButton({250.0f, 60.0f}),
-      playMatchText(font)
+      playMatchText(font),
+    summaryProcessed(false),
+    soundPlayed(false)
 {
     sidebarVisuals.reserve(12);
     reserveVisuals.reserve(7);
@@ -70,6 +72,7 @@ DraftSession::DraftSession(sf::RenderWindow &win, const Formation &f, SessionSta
     playMatchText = UIFactory::createText(font, "SIMULATE MATCH", 24, sf::Color::White, {640.0f, 400.0f});
     UIFactory::centerOrigin(playMatchText);
     analysisSystem = make_unique<AnalysisSystem>(font);
+    SoundManager::getInstance().playDraftMusic();
 }
 
 void DraftSession::loadResources() {
@@ -509,6 +512,8 @@ void DraftSession::handleInput() {
 
                     if (playMatchButton.getGlobalBounds().contains(mPos)) {
                         state = DraftState::SIMULATION;
+                        SoundManager::getInstance().stopDraftMusic();
+                        SoundManager::getInstance().playMatchMusic();
                         matchSystem = make_unique<MatchSystem>(font, (int)team.computeOverall());
                         matchSystem->startMatch();
                         return;
@@ -523,6 +528,7 @@ void DraftSession::handleInput() {
 
                 if (state == DraftState::SIMULATION) {
                     if (matchSystem && matchSystem->isFinished()) {
+                        SoundManager::getInstance().stopEffects();
                         isDrafting = false;
                     }
                     return;
@@ -558,14 +564,16 @@ void DraftSession::handleInput() {
 }
 
 void DraftSession::drawSummary() {
-    static bool logged = false;
-    if (!logged) {
+
+    if (!summaryProcessed) {
         string logMsg = "Draft Finished. Final Score: " + to_string((int)team.computeOverall());
         Logger::getInstance().log(logMsg);
+
         if (analysisSystem) {
             analysisSystem->analyzeTeam(team, formation);
         }
-        logged = true;
+
+        summaryProcessed = true;
     }
 
     window.clear(sf::Color(10, 10, 30));
@@ -575,7 +583,6 @@ void DraftSession::drawSummary() {
 
     sf::Text score = UIFactory::createText(font, "Final Overall: " + to_string((int)team.computeOverall()), 40, sf::Color::White, {640, 200});
     UIFactory::centerOrigin(score);
-
 
     std::stringstream ss;
     ss << fixed << setprecision(1) << globalStats.getAverage();
@@ -616,6 +623,18 @@ void DraftSession::draw() {
         }
 
         if (matchSystem && matchSystem->isFinished()) {
+            SoundManager::getInstance().stopMatchMusic();
+            if (!soundPlayed) {
+                int uScore = matchSystem->getUserScore();
+                int oScore = matchSystem->getOpponentScore();
+
+                if (uScore > oScore) {
+                    SoundManager::getInstance().playWinSound();
+                } else {
+                    SoundManager::getInstance().playDrawSound();
+                }
+                soundPlayed = true;
+            }
              sf::Text over = UIFactory::createText(font, "Click to Exit", 20, sf::Color::White, {640, 600});
              UIFactory::centerOrigin(over);
              window.draw(over);
